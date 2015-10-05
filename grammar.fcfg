@@ -1,0 +1,14 @@
+C[SEM=?vp, ROBOT=?r] -> Robot[ROBOT=?r] VP[SEM=?vp]
+C[SEM=?vp] -> VP[SEM=?vp]
+
+Robot[ROBOT=amigo] -> 'amigo'
+Robot[ROBOT=sergio] -> 'sergio'
+
+VP[SEM=(?v + ?np)] -> V[SEM=?v] NP[SEM=?np]
+
+V[SEM=grab] -> 'grab' | 'grasp' | 'get'
+V[SEM=move] -> 'move' 'to' | 'navigate' 'to' | 'goto' | 'go to'
+
+NP[SEM=?n] -> Det N[SEM=?n]
+Det -> 'the' | 'an' | 'a'
+N[SEM=undef] -> 'object' | 'think' | 'drink'
