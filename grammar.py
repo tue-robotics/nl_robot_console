@@ -4,35 +4,54 @@ import cmd
 
 # ----------------------------------------------------------------------------------------------------
 
-def parse_next_conj(instr):
+# Returns (atom, remaining_str)
+#    atom:          of type Atom
+#    remaining_str: string with remaining atoms
+def parse_next_atom(instr):
     instr = instr.strip()
 
     if not instr:
-        return None
+        return (None, "")
 
     i = instr.find("[")
     i_space = instr.find(" ")
 
+    name = ""
+    semantics = ""
+    remaining_str = ""
+
     if i >= 0:
         if i_space >= 0 and i_space < i:
-            return (instr[:i_space], "", instr[i_space:])
-        j = instr.find("]", i)
-        if j < 0:
-            raise Exception
-        return (instr[:i], instr[i:j+1], instr[j+1:])
+            name = instr[:i_space]
+            remaining_str = instr[i_space:]
+        else:
+            j = instr.find("]", i)
+            if j < 0:
+                raise Exception
+            else:
+                name = instr[:i]
+                semantics = instr[i+1:j]
+                remaining_str = instr[j+1:]
     else:
         i = instr.find(" ")
         if i < 0:
-            return (instr, "", "")
+            name = instr
         else:
-            return (instr[:i], "", instr[i:])
+            name = instr[:i]
+            remaining_str = instr[i:]
+
+    is_variable = name[0].isupper()
+    a = Atom(name, semantics, is_variable)
+
+    return (a, remaining_str)
 
 # ----------------------------------------------------------------------------------------------------
 
 class Tree:
 
-    def __init__(self, types = []):
+    def __init__(self, types = [], parent_semantics = None):
         self.types = types
+        self.parent_semantics = parent_semantics
         self.parent = None
         self.parent_idx = 0
         self.subtrees = [None for t in types]
@@ -46,15 +65,34 @@ class Tree:
             else:
                 return (None, 0)
 
-    def add_subtree(self, idx, types):
-        subtree = Tree(types)
-        subtree.parent = self
-        subtree.parent_idx = idx
-        self.subtrees[idx] = subtree
-        return subtree
+    def add_subtree(self, idx, tree):
+        tree.parent = self
+        tree.parent_idx = idx
+        self.subtrees[idx] = tree
+        return tree
 
     def __repr__(self):
-        return str(zip(self.types, self.subtrees))
+        return str((self.parent_semantics, zip(self.types, self.subtrees)))
+
+# ----------------------------------------------------------------------------------------------------
+
+class Rule:
+
+    def __init__(self, a, options):
+        self.antecedent = a
+        self.options = options
+
+# ----------------------------------------------------------------------------------------------------
+
+class Atom:
+
+    def __init__(self, name, semantics, is_variable = False):
+        self.name = name
+        self.semantics = semantics
+        self.is_variable = is_variable
+
+    def __repr__(self):
+        return str((self.name, self.semantics))
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -68,43 +106,42 @@ class Grammar:
         if len(r) != 2:
             raise Exception
 
-        (t, t_sem, outstr) = parse_next_conj(r[0].strip())
+        (antc, outstr) = parse_next_atom(r[0].strip())
 
         opts = r[1].split("|")
 
-        for opt in opts:
-            opt = opt.strip()
+        for opt_str in opts:
+            opt_str = opt_str.strip()
 
             cs = []
             while True:
-                ret = parse_next_conj(opt)
-                if not ret:
+                (consq, opt_str) = parse_next_atom(opt_str)
+                if not consq:
                     break
+                cs += [consq]
 
-                print ret
-
-                (c, sem, opt) = ret
-                cs += [c]
-
-            if not t in self.rules:
-                self.rules[t] = [cs]
+            if not antc.name in self.rules:
+                self.rules[antc.name] = Rule(antc, [cs])
             else:
-                self.rules[t] += [cs]
+                self.rules[antc.name].options += [cs]
 
     def enum_id(self, L):
-        return [["cabinet-12"], ["chair-3"]]
+        return [ [Atom("cabinet-12", "")],
+                 [Atom("chair-3",    "")] ]
 
     def enum_type(self, L):
-        return [["drink"], ["table"]]
+        return [ [Atom("table", "")],
+                 [Atom("drink", "")] ]
 
-    def parse(self, types, words):
-        T = Tree(types);
+    def parse(self, target, words):
+        T = Tree([Atom(target, None, True)]);
         if self._parse((T, 0), words):
             return T
         else:
             return False
 
     def _parse(self, TIdx, words):
+
         (T, idx) = TIdx
 
         if not T:
@@ -114,22 +151,25 @@ class Grammar:
             return False
 
         t = T.types[idx]
+        parent_semantics = None
 
-        if t[0] == "$":
-            opts = getattr(self, "enum_" + t[1:])(words)
+        if t.name[0] == "$":
+            opts = getattr(self, "enum_" + t.name[1:])(words)
 
-        elif t[0].isupper():
-            if not t in self.rules:
+        elif t.is_variable:
+            if not t.name in self.rules:
                 return False
-            opts = self.rules[t]
+            rule = self.rules[t.name]
+            parent_semantics = rule.antecedent.semantics
+            opts = rule.options
         else:
-            if t == words[0]:
+            if t.name == words[0]:
                 return self._parse(T.next(idx), words[1:])
             else:
                 return False
 
         for opt in opts:
-            subtree = T.add_subtree(idx, opt)
+            subtree = T.add_subtree(idx, Tree(opt, parent_semantics))
             ret = self._parse((subtree, 0), words)
             if ret:
                 return ret
@@ -221,7 +261,7 @@ class REPL(cmd.Cmd):
             return True  # True means interpreter has to stop
         else:
             #print self.parser.check(["C"], command.strip().split(" "))
-            print self.parser.parse(["C"], command.strip().split(" "))
+            print self.parser.parse("C", command.strip().split(" "))
 
         return False
 
@@ -242,11 +282,11 @@ def main():
     g.add_rule("C[robot=R, command=A] -> Robot[R] VP[A]")
     g.add_rule("C[command=A] -> VP[A]")
     
-    g.add_rule("Robot[robot=amigo] -> amigo")
-    g.add_rule("Robot[robot=sergio] -> sergio")
+    g.add_rule("Robot[amigo] -> amigo")
+    g.add_rule("Robot[sergio] -> sergio")
     
-    g.add_rule("VP[action=A] -> V[A]")
-    g.add_rule("VP[action=A, entity=E] -> V[A] NP[E]")
+    g.add_rule("VP[A] -> V[A]")
+    g.add_rule("VP[A, E] -> V[A] NP[E]")
     #g.add_rule("VP[action=A, entity=E, loc=E2] -> V[A] NP[E] from NP[E2]")
     
     g.add_rule("NP[unknown] -> Id")
@@ -255,8 +295,8 @@ def main():
     
     g.add_rule("Adj -> green | blue | red | small | big | large")
     
-    g.add_rule("V[action=grasp] -> grab | grasp | pick up")
-    g.add_rule("V[action=move] -> move to | goto")
+    g.add_rule("V[grasp] -> grab | grasp | pick up")
+    g.add_rule("V[move] -> move to | goto")
     
     g.add_rule("Det -> the")
     g.add_rule("Id -> $id")
