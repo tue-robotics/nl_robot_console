@@ -53,6 +53,9 @@ class Tree:
         self.subtrees[idx] = subtree
         return subtree
 
+    def __repr__(self):
+        return str(zip(self.types, self.subtrees))
+
 # ----------------------------------------------------------------------------------------------------
 
 class Grammar:
