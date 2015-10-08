@@ -19,6 +19,7 @@ class REPL(cmd.Cmd):
         self.parser.set_function("id", self.enum_id)
         self.parser.set_function("type", self.enum_type)
         self.parser.set_function("number", self.enum_number)
+        self.parser.set_function("property", self.enum_property)
 
     def emptyline(self):
         pass
@@ -84,6 +85,17 @@ class REPL(cmd.Cmd):
                  cfgparser.Option("bar", [cfgparser.Conjunct("bar")]),
                  cfgparser.Option("exit", [cfgparser.Conjunct("exit")]),
                  cfgparser.Option("cabinet", [cfgparser.Conjunct("cabinet")]) ]
+
+    def enum_property(self, L):
+        options = []
+
+        colors = ["red", "green", "blue", "yellow", "brown", "orange", "black", "white", "pink", "purple", "gray"]
+        options += [cfgparser.Option("\"color\": \"%s\"" % c, [cfgparser.Conjunct(c)]) for c in colors ]
+
+        sizes = ["large", "medium", "small"]
+        options += [cfgparser.Option("\"size\": \"%s\"" % s, [cfgparser.Conjunct(s)]) for s in sizes ]
+
+        return options
 
     def enum_number(self, L):
         if not L:

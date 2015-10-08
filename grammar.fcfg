@@ -47,16 +47,18 @@ V_ROTATE["rotate"] -> turn | rotate
 
 NP["id": I] -> ID[I]
 NP["type": T] -> DET TYPE[T]
-NP["type": T, "color": C] -> DET COLOR[C] TYPE[T]
+NP["type": T, P] -> DET PROP[P] TYPE[T]
+NP["type": T, P1, P2] -> DET PROP[P1] PROP[P2] TYPE[T]
+
+PROP[P] -> $property[P]
 
 NAME["me"] -> me
 
-COLOR["green"] -> green
-COLOR["blue"] -> blue
-
 DET -> the | a | an
 ID["X"] -> $id[X]
-TYPE["X"] -> object[X] | $type[X]
+
+TYPE[""] -> object | thing
+TYPE["X"] -> $type[X]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Entities
