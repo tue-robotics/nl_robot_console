@@ -126,19 +126,54 @@ class Grammar:
                 self.rules[antc.name].options += [cs]
 
     def enum_id(self, L):
-        return [ [Atom("cabinet-12", "")],
-                 [Atom("chair-3",    "")] ]
+        return [ [Atom("cabinet-12", "cabinet-12")],
+                 [Atom("chair-3",    "chair-3")] ]
 
     def enum_type(self, L):
-        return [ [Atom("table", "")],
-                 [Atom("drink", "")] ]
+        return [ [Atom("table", "table")],
+                 [Atom("drink", "drink")] ]
+
+    def get_semantics(self, tree):
+        sem = tree.parent_semantics
+        if not sem:
+            return ""
+
+        #print tree
+
+        for i in range(0, len(tree.types)):
+            t = tree.types[i]
+            subtree = tree.subtrees[i]
+
+            if subtree:
+                child_sem = self.get_semantics(subtree)
+                if child_sem:
+                    sem = sem.replace(t.semantics, child_sem)
+
+        print sem
+        return sem
+
 
     def parse(self, target, words):
-        T = Tree([Atom(target, None, True)]);
-        if self._parse((T, 0), words):
-            return T
-        else:
+        if not target in self.rules:
             return False
+
+        rule = self.rules[target]
+        parent_semantics = rule.antecedent.semantics
+        opts = rule.options
+
+        T = None
+        for opt in opts:
+            T_test = Tree(opt, parent_semantics)
+            if self._parse((T_test, 0), words) != False:
+                T = T_test
+                break
+
+        if not T:
+            return False
+
+        self._parse((T, 0), words)
+        self.get_semantics(T)
+        return T
 
     def _parse(self, TIdx, words):
 
@@ -176,7 +211,7 @@ class Grammar:
 
         return False
 
-    def check(self, T, L):       
+    def check(self, T, L):
         #print "check(%s, %s)" % (T, L)
 
         if not T:
@@ -281,26 +316,26 @@ def main():
 
     g.add_rule("C[robot=R, command=A] -> Robot[R] VP[A]")
     g.add_rule("C[command=A] -> VP[A]")
-    
+
     g.add_rule("Robot[amigo] -> amigo")
     g.add_rule("Robot[sergio] -> sergio")
-    
-    g.add_rule("VP[A] -> V[A]")
-    g.add_rule("VP[A, E] -> V[A] NP[E]")
+
+    #g.add_rule("VP[A] -> V[A]")
+    g.add_rule("VP[A(E)] -> V[A] NP[E]")
     #g.add_rule("VP[action=A, entity=E, loc=E2] -> V[A] NP[E] from NP[E2]")
-    
-    g.add_rule("NP[unknown] -> Id")
-    g.add_rule("NP[unknown] -> Det Type")
-    g.add_rule("NP[unknown] -> Det Adj Type")
-    
+
+    g.add_rule("NP[X] -> Id[X]")
+    g.add_rule("NP[X] -> Det Type[X]")
+    g.add_rule("NP[X] -> Det Adj Type[X]")
+
     g.add_rule("Adj -> green | blue | red | small | big | large")
-    
+
     g.add_rule("V[grasp] -> grab | grasp | pick up")
     g.add_rule("V[move] -> move to | goto")
-    
+
     g.add_rule("Det -> the")
-    g.add_rule("Id -> $id")
-    g.add_rule("Type -> object | $type")
+    g.add_rule("Id[X] -> $id[X]")
+    g.add_rule("Type[X] -> object[X] | $type[X]")
 
     #print g.check(["C"], "grasp".split(" "))
     #print g.check(["C"], "move to the cabinet".split(" "))
