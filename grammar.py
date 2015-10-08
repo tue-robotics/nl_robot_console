@@ -42,9 +42,12 @@ import cmd
 
 class Option:
 
-    def __init__(self, lsemantic = ""):
+    def __init__(self, lsemantic = "", conjs = None):
         self.lsemantic = lsemantic
-        self.conjuncts = []
+        if conjs:
+            self.conjuncts = conjs
+        else:
+            self.conjuncts = []
 
     def __repr__(self):
         return "(\"%s\", %s)" % (self.lsemantic, self.conjuncts)
@@ -152,13 +155,13 @@ class Grammar:
 
             rule.options += [opt]
 
-    #def enum_id(self, L):
-    #    return [ [Atom("cabinet-12", "cabinet-12")],
-    #             [Atom("chair-3",    "chair-3")] ]
+    def enum_id(self, L):
+        return [ Option("cabinet-12", [Conjunct("cabinet-12")]),
+                 Option("chair-3",    [Conjunct("chair-3")]) ]
 
-    #def enum_type(self, L):
-    #    return [ [Atom("table", "table")],
-    #             [Atom("drink", "drink")] ]
+    def enum_type(self, L):
+        return [ Option("table", [Conjunct("table")]),
+                 Option("drink", [Conjunct("drink")]) ]
 
     def get_semantics(self, tree):
 
@@ -182,8 +185,7 @@ class Grammar:
         for opt in rule.options:
             T = Tree(opt)
             if self._parse((T, 0), words) != False:
-                print self.get_semantics(T)
-                return T
+                return self.get_semantics(T)
 
         return False
 
@@ -198,13 +200,14 @@ class Grammar:
 
         conj = T.option.conjuncts[idx]
 
-        #if conj.name[0] == "$":
-        #    opts = getattr(self, "enum_" + t.name[1:])(words)
-
         if conj.is_variable:
             if not conj.name in self.rules:
                 return False
             options = self.rules[conj.name].options
+
+        elif conj.name[0] == "$":
+            options = getattr(self, "enum_" + conj.name[1:])(words)
+
         else:
             if conj.name == words[0]:
                 return self._parse(T.next(idx), words[1:])
@@ -328,25 +331,22 @@ def main():
     g.add_rule("Robot[\"amigo\"] -> amigo")
     g.add_rule("Robot[\"sergio\"] -> sergio")
 
-    #g.add_rule("VP[A] -> V[A]")
-    g.add_rule("VP[\"action\": A, \"entity\": E] -> V[A] NP[E]")
-    
-    #g.add_rule("VP[action=A, entity=E, loc=E2] -> V[A] NP[E] from NP[E2]")
+    g.add_rule("VP[\"action\": A] -> V[A]")
+    g.add_rule("VP[\"action\": A, \"entity\": {E}] -> V[A] NP[E]")
 
-    g.add_rule("Type[\"drink\"] -> drink")
+    g.add_rule("NP[\"id\": I] -> ID[I]")
+    g.add_rule("NP[\"type\": T] -> DET TYPE[T]")
+    g.add_rule("NP[\"type\": T, \"color\": C] -> DET COLOR[C] TYPE[T]")
 
-    g.add_rule("NP[X] -> Id[X]")
-    g.add_rule("NP[X] -> Det Type[X]")
-    g.add_rule("NP[X] -> Det Adj Type[X]")
-
-    g.add_rule("Adj -> green | blue | red | small | big | large")
+    g.add_rule("COLOR[\"green\"] -> green")
+    g.add_rule("COLOR[\"blue\"] -> blue")
 
     g.add_rule("V[\"grasp\"] -> grab | grasp | pick up")
     g.add_rule("V[\"move\"] -> move to | goto")
 
-    g.add_rule("Det -> the")
-    g.add_rule("Id[X] -> $id[X]")
-    g.add_rule("Type[X] -> object[X] | $type[X]")
+    g.add_rule("DET -> the")
+    g.add_rule("ID[\"X\"] -> $id[X]")
+    g.add_rule("TYPE[\"X\"] -> object[X] | $type[X]")
 
     #print g.check(["C"], "grasp".split(" "))
     #print g.check(["C"], "move to the cabinet".split(" "))
