@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<package>
+  <name>nl_robot_console</name>
+  <version>0.0.0</version>
+  <description>Natural Language Robot Console</description>
+
+  <maintainer email="S.v.d.Dries@tue.nl">Sjoerd van den Dries</maintainer>
+
+  <license>TODO</license>
+
+</package>
