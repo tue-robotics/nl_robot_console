@@ -2,42 +2,6 @@
 import sys
 import cmd
 
-# Rule:
-#    leftname
-#    options[]
-#        leftsem
-#        conjunctions[]
-#            rightname
-#            rightsem
-
-# Example:
-
-#    V
-#    options[]
-#        - grasp
-#          conjunctions[]
-#            - grab
-#              ""
-#            - grasp
-#              ""
-#        - goto
-#          conjunctions[]
-#            - move
-#              ""
-
-#    VP
-#    options[]
-#        - A(X)
-#          conjunctions[]
-#            - V
-#              A
-#            - NP
-#              X
-#        - A
-#          conjunctions[]
-#            - V
-#              A
-
 # ----------------------------------------------------------------------------------------------------
 
 class Option:
@@ -102,9 +66,10 @@ class Tree:
 
 # ----------------------------------------------------------------------------------------------------
 
-# Returns (atom, remaining_str)
-#    atom:          of type Atom
-#    remaining_str: string with remaining atoms
+# Returns (name, semantics, remaining_str)
+# For example for "VP[X, Y] foo bar" it returns:
+#     ("VP", "X, Y", "foo bar")
+#
 def parse_next_atom(s):
     s = s.strip()
 
@@ -176,6 +141,8 @@ class Grammar:
 
         return sem
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
     def parse(self, target, words):
         if not target in self.rules:
             return False
@@ -222,67 +189,50 @@ class Grammar:
 
         return False
 
-    def check(self, T, L):
-        #print "check(%s, %s)" % (T, L)
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-        if not T:
-            return L == []
-
-        if not L:
+    def next_word(self, target, words):
+        if not target in self.rules:
             return False
 
-        t = T[0]
+        rule = self.rules[target]
 
-        if t[0] == "$":
-            opts = getattr(self, "enum_" + t[1:])(L)
+        next_words = []
+        for opt in rule.options:
+            next_words += self._next_word((Tree(opt), 0), words)
 
-        elif not t[0].isupper():
-            if L[0] == t:
-                return self.check(T[1:], L[1:])
-            else:
-                return False
-        else:
-            if not t in self.rules:
-                return False
-            (opts, t_sem) = self.rules[t]
+        return next_words
 
-            print (opts, t_sem)
+    def _next_word(self, TIdx, words):
+        (T, idx) = TIdx
 
-        for opt in opts:
-            print opt
-            ret = self.check([o[0] for o in opt] + T[1:], L)    # <-- this is where the magic should happen
-            if ret != False:
-                print "check(%s, %s)" % (T, L)
-                return True
-
-        return False
-
-    def next_word(self, T, L):
         if not T:
             return []
 
-        t = T[0]
+        conj = T.option.conjuncts[idx]
 
-        if t[0] == "$":
-            opts = getattr(self, "enum_" + t[1:])(L)
+        if conj.is_variable:
+            if not conj.name in self.rules:
+                return []
+            options = self.rules[conj.name].options
 
-        elif not t[0].isupper():
-            if L == []:
-                return [t]
-            elif L[0] == t:
-                return self.next_word(T[1:], L[1:])
+        elif conj.name[0] == "$":
+            options = getattr(self, "enum_" + conj.name[1:])(words)
+
+        else:
+            if words == []:
+                return [conj.name]
+            elif conj.name == words[0]:
+                return self._next_word(T.next(idx), words[1:])
             else:
                 return []
-        else:
-            if not t in self.rules:
-                return []
-            opts = self.rules[t]
 
-        words = []
-        for opt in opts:
-            words += self.next_word(opt + T[1:], L)
+        next_words = []
+        for opt in options:
+            subtree = T.add_subtree(idx, Tree(opt))
+            next_words += self._next_word((subtree, 0), words)
 
-        return words
+        return next_words
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -314,7 +264,7 @@ class REPL(cmd.Cmd):
     def completedefault(self, text, line, begidx, endidx):
         try:
             partial_command = line.split(" ")[:-1]
-            words = self.parser.next_word(["C"], partial_command)
+            words = self.parser.next_word("C", partial_command)
         except Exception as e:
             print e
 
@@ -342,16 +292,11 @@ def main():
     g.add_rule("COLOR[\"blue\"] -> blue")
 
     g.add_rule("V[\"grasp\"] -> grab | grasp | pick up")
-    g.add_rule("V[\"move\"] -> move to | goto")
+    g.add_rule("V[\"move\"] -> move to | goto | go to")
 
     g.add_rule("DET -> the")
     g.add_rule("ID[\"X\"] -> $id[X]")
     g.add_rule("TYPE[\"X\"] -> object[X] | $type[X]")
-
-    #print g.check(["C"], "grasp".split(" "))
-    #print g.check(["C"], "move to the cabinet".split(" "))
-
-    #print g.next_word(["C"], "amigo move to".split(" "))
 
     try:
         repl = REPL(g)
