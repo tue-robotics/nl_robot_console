@@ -2,62 +2,85 @@
 import sys
 import cmd
 
+# Rule:
+#    leftname
+#    options[]
+#        leftsem
+#        conjunctions[]
+#            rightname
+#            rightsem
+
+# Example:
+
+#    V
+#    options[]
+#        - grasp
+#          conjunctions[]
+#            - grab
+#              ""
+#            - grasp
+#              ""
+#        - goto
+#          conjunctions[]
+#            - move
+#              ""
+
+#    VP
+#    options[]
+#        - A(X)
+#          conjunctions[]
+#            - V
+#              A
+#            - NP
+#              X
+#        - A
+#          conjunctions[]
+#            - V
+#              A
+
 # ----------------------------------------------------------------------------------------------------
 
-# Returns (atom, remaining_str)
-#    atom:          of type Atom
-#    remaining_str: string with remaining atoms
-def parse_next_atom(instr):
-    instr = instr.strip()
+class Option:
 
-    if not instr:
-        return (None, "")
+    def __init__(self, lsemantic = ""):
+        self.lsemantic = lsemantic
+        self.conjuncts = []
 
-    i = instr.find("[")
-    i_space = instr.find(" ")
+    def __repr__(self):
+        return "(\"%s\", %s)" % (self.lsemantic, self.conjuncts)
 
-    name = ""
-    semantics = ""
-    remaining_str = ""
+# ----------------------------------------------------------------------------------------------------
 
-    if i >= 0:
-        if i_space >= 0 and i_space < i:
-            name = instr[:i_space]
-            remaining_str = instr[i_space:]
-        else:
-            j = instr.find("]", i)
-            if j < 0:
-                raise Exception
-            else:
-                name = instr[:i]
-                semantics = instr[i+1:j]
-                remaining_str = instr[j+1:]
-    else:
-        i = instr.find(" ")
-        if i < 0:
-            name = instr
-        else:
-            name = instr[:i]
-            remaining_str = instr[i:]
+class Conjunct:
 
-    is_variable = name[0].isupper()
-    a = Atom(name, semantics, is_variable)
+    def __init__(self, name, rsemantic = "", is_variable = False):
+        self.name = name
+        self.rsemantic = rsemantic
+        self.is_variable = is_variable
 
-    return (a, remaining_str)
+    def __repr__(self):
+        return self.name
+
+# ----------------------------------------------------------------------------------------------------
+
+class Rule:
+
+    def __init__(self, lname):
+        self.lname = lname
+        self.options = []
 
 # ----------------------------------------------------------------------------------------------------
 
 class Tree:
 
-    def __init__(self, types = [], parent_semantics = None):
-        self.types = types
-        self.parent_semantics = parent_semantics
+    def __init__(self, option):
+        self.option = option
+        self.subtrees = [None for c in self.option.conjuncts]
         self.parent = None
         self.parent_idx = 0
-        self.subtrees = [None for t in types]
 
     def next(self, idx):
-        if idx + 1 < len(self.types):
+        if idx + 1 < len(self.option.conjuncts):
             return (self, idx + 1)
         else:
             if self.parent:
@@ -72,27 +95,27 @@ class Tree:
         return tree
 
     def __repr__(self):
-        return str((self.parent_semantics, zip(self.types, self.subtrees)))
+        return str(zip(self.option.conjuncts, self.subtrees))
 
 # ----------------------------------------------------------------------------------------------------
 
-class Rule:
+# Returns (atom, remaining_str)
+#    atom:          of type Atom
+#    remaining_str: string with remaining atoms
+def parse_next_atom(s):
+    s = s.strip()
 
-    def __init__(self, a, options):
-        self.antecedent = a
-        self.options = options
+    for i in range(0, len(s)):
+        c = s[i]
+        if c == ' ':
+            return (s[:i], "", s[i:].strip())
+        elif c == '[':
+            j = s.find("]", i)
+            if j < 0:
+                raise Exception
+            return (s[:i], s[i+1:j], s[j+1:].strip())
 
-# ----------------------------------------------------------------------------------------------------
-
-class Atom:
-
-    def __init__(self, name, semantics, is_variable = False):
-        self.name = name
-        self.semantics = semantics
-        self.is_variable = is_variable
-
-    def __repr__(self):
-        return str((self.name, self.semantics))
+    return (s, "", "")
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -102,81 +125,69 @@ class Grammar:
         self.rules = {}
 
     def add_rule(self, s):
-        r = s.split(" -> ")
-        if len(r) != 2:
+        tmp = s.split(" -> ")
+        if len(tmp) != 2:
             raise Exception
 
-        (antc, outstr) = parse_next_atom(r[0].strip())
+        (lname, lsem, outstr) = parse_next_atom(tmp[0].strip())
 
-        opts = r[1].split("|")
+        # See if a rule with this lname already exists. If not, add it
+        if lname in self.rules:
+            rule = self.rules[lname]
+        else:
+            rule = Rule(lname)
+            self.rules[lname] = rule
 
-        for opt_str in opts:
+        opt_strs = tmp[1].split("|")
+
+        for opt_str in opt_strs:
             opt_str = opt_str.strip()
 
-            cs = []
-            while True:
-                (consq, opt_str) = parse_next_atom(opt_str)
-                if not consq:
-                    break
-                cs += [consq]
+            opt = Option(lsem)
 
-            if not antc.name in self.rules:
-                self.rules[antc.name] = Rule(antc, [cs])
-            else:
-                self.rules[antc.name].options += [cs]
+            while opt_str:
+                (rname, rsem, opt_str) = parse_next_atom(opt_str)
+                is_variable = rname[0].isupper()
+                opt.conjuncts += [Conjunct(rname, rsem, is_variable)]
 
-    def enum_id(self, L):
-        return [ [Atom("cabinet-12", "cabinet-12")],
-                 [Atom("chair-3",    "chair-3")] ]
+            rule.options += [opt]
 
-    def enum_type(self, L):
-        return [ [Atom("table", "table")],
-                 [Atom("drink", "drink")] ]
+    #def enum_id(self, L):
+    #    return [ [Atom("cabinet-12", "cabinet-12")],
+    #             [Atom("chair-3",    "chair-3")] ]
+
+    #def enum_type(self, L):
+    #    return [ [Atom("table", "table")],
+    #             [Atom("drink", "drink")] ]
 
     def get_semantics(self, tree):
-        sem = tree.parent_semantics
-        if not sem:
-            return ""
 
-        #print tree
-
-        for i in range(0, len(tree.types)):
-            t = tree.types[i]
+        sem = tree.option.lsemantic
+        for i in range(0, len(tree.subtrees)):
+            conj = tree.option.conjuncts[i]
             subtree = tree.subtrees[i]
 
             if subtree:
                 child_sem = self.get_semantics(subtree)
-                if child_sem:
-                    sem = sem.replace(t.semantics, child_sem)
+                sem = sem.replace(conj.rsemantic, child_sem)
 
-        print sem
         return sem
-
 
     def parse(self, target, words):
         if not target in self.rules:
             return False
 
         rule = self.rules[target]
-        parent_semantics = rule.antecedent.semantics
-        opts = rule.options
 
-        T = None
-        for opt in opts:
-            T_test = Tree(opt, parent_semantics)
-            if self._parse((T_test, 0), words) != False:
-                T = T_test
-                break
+        for opt in rule.options:
+            T = Tree(opt)
+            if self._parse((T, 0), words) != False:
+                print self.get_semantics(T)
+                return T
 
-        if not T:
-            return False
-
-        self._parse((T, 0), words)
-        self.get_semantics(T)
-        return T
+        return False
 
     def _parse(self, TIdx, words):
-
         (T, idx) = TIdx
 
         if not T:
@@ -185,26 +196,23 @@ class Grammar:
         if not words:
             return False
 
-        t = T.types[idx]
-        parent_semantics = None
+        conj = T.option.conjuncts[idx]
 
-        if t.name[0] == "$":
-            opts = getattr(self, "enum_" + t.name[1:])(words)
+        #if conj.name[0] == "$":
+        #    opts = getattr(self, "enum_" + t.name[1:])(words)
 
-        elif t.is_variable:
-            if not t.name in self.rules:
+        if conj.is_variable:
+            if not conj.name in self.rules:
                 return False
-            rule = self.rules[t.name]
-            parent_semantics = rule.antecedent.semantics
-            opts = rule.options
+            options = self.rules[conj.name].options
         else:
-            if t.name == words[0]:
+            if conj.name == words[0]:
                 return self._parse(T.next(idx), words[1:])
             else:
                 return False
 
-        for opt in opts:
-            subtree = T.add_subtree(idx, Tree(opt, parent_semantics))
+        for opt in options:
+            subtree = T.add_subtree(idx, Tree(opt))
             ret = self._parse((subtree, 0), words)
             if ret:
                 return ret
@@ -314,15 +322,18 @@ class REPL(cmd.Cmd):
 def main():
     g = Grammar()
 
-    g.add_rule("C[robot=R, command=A] -> Robot[R] VP[A]")
-    g.add_rule("C[command=A] -> VP[A]")
+    g.add_rule("C[{\"robot\": R, A}] -> Robot[R] VP[A]")
+    g.add_rule("C[{A}] -> VP[A]")
 
-    g.add_rule("Robot[amigo] -> amigo")
-    g.add_rule("Robot[sergio] -> sergio")
+    g.add_rule("Robot[\"amigo\"] -> amigo")
+    g.add_rule("Robot[\"sergio\"] -> sergio")
 
     #g.add_rule("VP[A] -> V[A]")
-    g.add_rule("VP[A(E)] -> V[A] NP[E]")
+    g.add_rule("VP[\"action\": A, \"entity\": E] -> V[A] NP[E]")
+    
     #g.add_rule("VP[action=A, entity=E, loc=E2] -> V[A] NP[E] from NP[E2]")
+
+    g.add_rule("Type[\"drink\"] -> drink")
 
     g.add_rule("NP[X] -> Id[X]")
     g.add_rule("NP[X] -> Det Type[X]")
@@ -330,8 +341,8 @@ def main():
 
     g.add_rule("Adj -> green | blue | red | small | big | large")
 
-    g.add_rule("V[grasp] -> grab | grasp | pick up")
-    g.add_rule("V[move] -> move to | goto")
+    g.add_rule("V[\"grasp\"] -> grab | grasp | pick up")
+    g.add_rule("V[\"move\"] -> move to | goto")
 
     g.add_rule("Det -> the")
     g.add_rule("Id[X] -> $id[X]")
