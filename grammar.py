@@ -92,6 +92,17 @@ class Grammar:
     def __init__(self):
         self.rules = {}
 
+    @staticmethod
+    def fromfile(filename):
+        grammar = Grammar()
+        with open(filename) as f:
+            for line in f:
+                line = line.strip()
+                if line == "" or line[0] == '#':
+                    continue
+                grammar.add_rule(line)
+        return grammar
+
     def add_rule(self, s):
         tmp = s.split(" -> ")
         if len(tmp) != 2:
@@ -130,7 +141,7 @@ class Grammar:
 
     def enum_number(self, L):
         if not L:
-            return []
+            return [Option("", [Conjunct("<NUMBER>")])]
         try:
             f = float(L[0])
             return [Option(L[0], [Conjunct(L[0])])]
@@ -265,8 +276,9 @@ class REPL(cmd.Cmd):
         elif command in ["quit", "exit"]:
             return True  # True means interpreter has to stop
         else:
-            #print self.parser.check(["C"], command.strip().split(" "))
-            print self.parser.parse("C", command.strip().split(" "))
+            print ""
+            print "Meaning: %s" % self.parser.parse("C", command.strip().split(" "))
+            print ""
 
         return False
 
@@ -282,74 +294,7 @@ class REPL(cmd.Cmd):
 # ----------------------------------------------------------------------------------------------------
 
 def main():
-    g = Grammar()
-
-    g.add_rule("C[{\"robot\": R, A}] -> Robot[R] VP[A]")
-    g.add_rule("C[{A}] -> VP[A]")
-
-    g.add_rule("Robot[\"amigo\"] -> amigo")
-    g.add_rule("Robot[\"sergio\"] -> sergio")
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-    # Grasping
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    g.add_rule("VP[A] -> VP_GRASP[A]")
-    g.add_rule("VP[A, \"side\": S] -> VP_GRASP[A] with SIDE[S]")
-    g.add_rule("VP[A, \"loc\": {Y}] -> VP_GRASP[A] from NP[Y]")
-    g.add_rule("VP[A, \"loc\": {Y}, \"side\": S] -> VP_GRASP[A] from NP[Y] with SIDE[S]")
-
-    g.add_rule("VP_GRASP[\"action\": A, \"entity\": {X}] -> V_GRASP[A] NP[X]")
-
-    g.add_rule("V_GRASP[\"grasp\"] -> grab | grasp | pick up")
-
-    g.add_rule("SIDE[\"left\"] -> left")
-    g.add_rule("SIDE[\"right\"] -> right")
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-    # Bringing
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    g.add_rule("VP[\"action\": A, \"entity\": {X}, \"loc\": {Y}] -> V_BRING[A] NP[X] to NP[Y]")
-    g.add_rule("V_BRING[\"transport\"] -> bring | transport")
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-    # Moving
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    g.add_rule("VP[\"action\": A, \"entity\": X] -> V_MOVE[A] NP[X]")
-    g.add_rule("V_MOVE[\"move\"] -> move to | goto | go to | drive to | navigate to")
-
-    g.add_rule("VP[\"action\": A, \"degrees\": -90] -> V_ROTATE[A] left")
-    g.add_rule("VP[\"action\": A, \"degrees\": 90] -> V_ROTATE[A] right")
-    g.add_rule("VP[\"action\": A, \"degrees\": -N] -> V_ROTATE[A] NUM[N] degrees left")
-    g.add_rule("VP[\"action\": A, \"degrees\": N] -> V_ROTATE[A] NUM[N] degrees right")
-    g.add_rule("V_ROTATE[\"rotate\"] -> turn | rotate")
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-    # Entities
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    g.add_rule("NP[\"id\": I] -> ID[I]")
-    g.add_rule("NP[\"type\": T] -> DET TYPE[T]")
-    g.add_rule("NP[\"type\": T, \"color\": C] -> DET COLOR[C] TYPE[T]")
-
-    g.add_rule("NAME[\"me\"] -> me")
-
-    g.add_rule("COLOR[\"green\"] -> green")
-    g.add_rule("COLOR[\"blue\"] -> blue")
-
-    g.add_rule("DET -> the | a | an")
-    g.add_rule("ID[\"X\"] -> $id[X]")
-    g.add_rule("TYPE[\"X\"] -> object[X] | $type[X]")
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-    # Entities
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    g.add_rule("NUM[N] -> $number[N]")
-
-    # - - - - - - - - - - - - - - - - - - - - - - - - -
+    g = Grammar.fromfile("grammar.fcfg")
 
     try:
         repl = REPL(g)
