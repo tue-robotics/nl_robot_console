@@ -56,7 +56,7 @@ class REPL(cmd.Cmd):
             self._load_grammar()
         else:
             print ""
-            print "Meaning: %s" % self.parser.parse("C", command.strip().split(" "))
+            print "    Meaning: %s" % self.parser.parse("C", command.strip().split(" "))
             print ""
 
         return False
@@ -97,8 +97,12 @@ class REPL(cmd.Cmd):
 # ----------------------------------------------------------------------------------------------------
 
 def main():
+
+    import sys, os
+    pkgdir = os.path.dirname(sys.argv[0])
+
     try:
-        repl = REPL("grammar.fcfg")
+        repl = REPL(os.path.join(pkgdir, "grammar.fcfg"))
         repl.cmdloop()
     except KeyboardInterrupt:
         pass
