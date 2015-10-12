@@ -10,10 +10,10 @@ ROBOT["sergio"] -> sergio
 
 VP[A] -> VP_GRASP[A]
 VP[A, "side": S] -> VP_GRASP[A] with SIDE[S]
-VP[A, "loc": {Y}] -> VP_GRASP[A] from NP[Y]
-VP[A, "loc": {Y}, "side": S] -> VP_GRASP[A] from NP[Y] with SIDE[S]
+VP[A, "loc": Y] -> VP_GRASP[A] from NP[Y]
+VP[A, "loc": Y, "side": S] -> VP_GRASP[A] from NP[Y] with SIDE[S]
 
-VP_GRASP["action": A, "entity": {X}] -> V_GRASP[A] NP[X]
+VP_GRASP["action": A, "entity": X] -> V_GRASP[A] NP[X]
 
 V_GRASP["pick-up"] -> grab | grasp | pick up
 
@@ -24,14 +24,14 @@ SIDE["right"] -> right
 # Bringing
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
-VP["action": A, "entity": {X}, "loc": {Y}] -> V_BRING[A] NP[X] to NP[Y]
+VP["action": A, "entity": X, "loc": Y] -> V_BRING[A] NP[X] to NP[Y]
 V_BRING["transport"] -> bring | transport
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Moving
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
-VP["action": A, "entity": {X}] -> V_MOVE[A] NP[X]
+VP["action": A, "entity": X] -> V_MOVE[A] NP[X]
 VP["action": A, "coordinate": C] -> V_MOVE[A] COORDINATE_2D[C]
 V_MOVE["navigate-to"] -> move to | goto | go to | drive to | navigate to
 
@@ -42,14 +42,22 @@ VP["action": A, "degrees": N] -> V_ROTATE[A] NUM[N] degrees right
 V_ROTATE["rotate"] -> turn | rotate
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
+# Inspecting
+# - - - - - - - - - - - - - - - - - - - - - - - - -
+
+VP["action": A, "entity": X] -> V_INSPECT[A] NP[X]
+V_INSPECT["inspect"] -> inspect
+
+# - - - - - - - - - - - - - - - - - - - - - - - - -
 # Entities
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
-NP["id": I] -> ID[I]
-NP["id": I] -> DET ID[I]
-NP["type": T] -> DET TYPE[T]
-NP["type": T, P] -> DET PROP[P] TYPE[T]
-NP["type": T, P1, P2] -> DET PROP[P1] PROP[P2] TYPE[T]
+NP[{"id": I}] -> ID[I]
+NP[{"id": I}] -> DET ID[I]
+NP[{}] -> DET object
+NP[{"type": T}] -> DET TYPE[T]
+NP[{"type": T, P}] -> DET PROP[P] TYPE[T]
+NP[{"type": T, P1, P2}] -> DET PROP[P1] PROP[P2] TYPE[T]
 
 PROP[P] -> $property[P]
 
@@ -58,7 +66,6 @@ NAME["me"] -> me
 DET -> the | a | an
 ID["X"] -> $id[X]
 
-TYPE[""] -> object | thing
 TYPE["X"] -> $type[X]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
