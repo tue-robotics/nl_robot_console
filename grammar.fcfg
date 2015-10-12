@@ -46,6 +46,7 @@ V_ROTATE["rotate"] -> turn | rotate
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
 NP["id": I] -> ID[I]
+NP["id": I] -> DET ID[I]
 NP["type": T] -> DET TYPE[T]
 NP["type": T, P] -> DET PROP[P] TYPE[T]
 NP["type": T, P1, P2] -> DET PROP[P1] PROP[P2] TYPE[T]

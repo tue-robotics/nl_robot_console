@@ -3,9 +3,23 @@ import sys
 import cmd
 import cfgparser
 
+# Connection to robot
 import rospy
 import action_server
 from action_server import srv
+
+# Connection to world model
+import ed
+from ed import srv
+
+# ----------------------------------------------------------------------------------------------------
+
+class RobotConnection:
+
+    def __init__(self, robot_name):
+        self.robot_name = robot_name
+        self.cl_robot = rospy.ServiceProxy(self.robot_name + "/action_server/add_action", action_server.srv.AddAction)
+        self.cl_wm = rospy.ServiceProxy(self.robot_name + "/ed/simple_query", ed.srv.SimpleQuery)
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -18,8 +32,12 @@ class REPL(cmd.Cmd):
         self.grammar_filename = grammar_filename
         self._load_grammar()
 
-        self.robot_name = None
-        self.robot_to_srv = {}
+        # Default robot connection
+        self.robot_connection = None
+        self.robot_to_connection = {}
+        self._get_or_create_robot_connection("amigo")
+
+        self._clear_caches()
 
     def _load_grammar(self):
         self.parser = cfgparser.CFGParser.fromfile(self.grammar_filename)
@@ -27,6 +45,32 @@ class REPL(cmd.Cmd):
         self.parser.set_function("type", self.enum_type)
         self.parser.set_function("number", self.enum_number)
         self.parser.set_function("property", self.enum_property)
+
+    def _clear_caches(self):
+        self._entities = []
+        self._updated_wm = False
+
+    def _get_or_create_robot_connection(self, robot_name):
+        self.prompt = "[%s] > " % robot_name
+
+        if not robot_name in self.robot_to_connection:
+            self.robot_connection = RobotConnection(robot_name)
+            self.robot_to_connection[robot_name] = self.robot_connection
+        else:
+            self.robot_connection = self.robot_to_connection[robot_name]
+
+        return self.robot_connection
+
+    def _update_wm(self):
+        if self._updated_wm:
+            return
+
+        try:
+            self._entities = self.robot_connection.cl_wm().entities
+        except rospy.service.ServiceException, e:
+            print("\n\n    %s\n" % e)
+
+        self._updated_wm = True
 
     def emptyline(self):
         pass
@@ -70,11 +114,12 @@ class REPL(cmd.Cmd):
 
             import yaml
             params = yaml.load(sem)
-            if "robot" in params:
-                self.robot_name = params["robot"]
-                self.prompt = "[%s] > " % self.robot_name
 
-            if not self.robot_name:
+            if "robot" in params:
+                robot_name = params["robot"]
+                self._get_or_create_robot_connection(robot_name)
+
+            if not self.robot_connection:
                 print("\n    Please specify which robot to use.\n")
                 return False
 
@@ -84,24 +129,21 @@ class REPL(cmd.Cmd):
                 print("\n    No action specified in semantics:\n        %s\n" % sem)
                 return False
 
-            if not self.robot_name in self.robot_to_srv:
-                cl_robot = rospy.ServiceProxy(self.robot_name + "/action_server/add_action", action_server.srv.AddAction)
-                self.robot_to_srv[self.robot_name] = cl_robot
-            else:
-                cl_robot = self.robot_to_srv[self.robot_name]
-
             try:
-                resp = cl_robot(action=action, parameters=sem) # TODO
-
+                resp = self.robot_connection.cl_robot(action=action, parameters=sem)
                 if (resp.error_msg):
                     print "\n    Error message from action server:\n\n        %s\n" % resp.error_msg
-
             except rospy.ServiceException, e:
                 print("\n    Service call failed: %s\n" % e)
 
             # print "\n    Meaning: %s\n" % sem
 
         return False
+
+    def postcmd(self, stop, line):
+        # After a command is processed, clear the caches (e.g. world model entities)
+        self._clear_caches()
+        return stop
 
     def completedefault(self, text, line, begidx, endidx):
         try:
@@ -115,17 +157,28 @@ class REPL(cmd.Cmd):
     # ---------------------------------------
 
     def enum_id(self, L):
-        return [ cfgparser.Option("cabinet-12", [cfgparser.Conjunct("cabinet-12")]),
-                 cfgparser.Option("chair-3",    [cfgparser.Conjunct("chair-3")]) ]
+        self._update_wm()
+
+        ids = [e.id for e in self._entities]
+
+        opts = []
+        for id in ids:
+            if id != "":
+                opts += [cfgparser.Option(id, [cfgparser.Conjunct(id)])]
+
+        return opts
 
     def enum_type(self, L):
-        return [ cfgparser.Option("living_room", [cfgparser.Conjunct("living"), cfgparser.Conjunct("room")]),
-                 cfgparser.Option("kitchen", [cfgparser.Conjunct("kitchen")]),
-                 cfgparser.Option("table", [cfgparser.Conjunct("table")]),
-                 cfgparser.Option("drink", [cfgparser.Conjunct("drink")]),
-                 cfgparser.Option("bar", [cfgparser.Conjunct("bar")]),
-                 cfgparser.Option("exit", [cfgparser.Conjunct("exit")]),
-                 cfgparser.Option("cabinet", [cfgparser.Conjunct("cabinet")]) ]
+        self._update_wm()
+
+        types = set([i for sublist in [e.types for e in self._entities] for i in sublist])
+
+        opts = []
+        for t in types:
+            if t != "":
+                opts += [cfgparser.Option(t, [cfgparser.Conjunct(t)])]
+
+        return opts
 
     def enum_property(self, L):
         options = []
