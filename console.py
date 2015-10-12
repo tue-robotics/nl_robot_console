@@ -3,6 +3,10 @@ import sys
 import cmd
 import cfgparser
 
+import rospy
+import action_server
+from action_server import srv
+
 # ----------------------------------------------------------------------------------------------------
 
 class REPL(cmd.Cmd):
@@ -13,6 +17,9 @@ class REPL(cmd.Cmd):
         self.use_rawinput = True
         self.grammar_filename = grammar_filename
         self._load_grammar()
+
+        self.robot_name = None
+        self.robot_to_srv = {}
 
     def _load_grammar(self):
         self.parser = cfgparser.CFGParser.fromfile(self.grammar_filename)
@@ -56,9 +63,43 @@ class REPL(cmd.Cmd):
         elif command in ["reload"]:
             self._load_grammar()
         else:
-            print ""
-            print "    Meaning: %s" % self.parser.parse("C", command.strip().split(" "))
-            print ""
+            sem = self.parser.parse("C", command.strip().split(" "))
+            if sem == False:
+                print("\n    I do not understand.\n")
+                return False
+
+            import yaml
+            params = yaml.load(sem)
+            if "robot" in params:
+                self.robot_name = params["robot"]
+                self.prompt = "[%s] > " % self.robot_name
+
+            if not self.robot_name:
+                print("\n    Please specify which robot to use.\n")
+                return False
+
+            if "action" in params:
+                action = params["action"]
+            else:
+                print("\n    No action specified in semantics:\n        %s\n" % sem)
+                return False
+
+            if not self.robot_name in self.robot_to_srv:
+                cl_robot = rospy.ServiceProxy(self.robot_name + "/action_server/add_action", action_server.srv.AddAction)
+                self.robot_to_srv[self.robot_name] = cl_robot
+            else:
+                cl_robot = self.robot_to_srv[self.robot_name]
+
+            try:
+                resp = cl_robot(action=action, parameters=sem) # TODO
+
+                if (resp.error_msg):
+                    print "\n    Error message from action server:\n\n        %s\n" % resp.error_msg
+
+            except rospy.ServiceException, e:
+                print("\n    Service call failed: %s\n" % e)
+
+            # print "\n    Meaning: %s\n" % sem
 
         return False
 

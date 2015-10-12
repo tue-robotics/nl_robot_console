@@ -15,7 +15,7 @@ VP[A, "loc": {Y}, "side": S] -> VP_GRASP[A] from NP[Y] with SIDE[S]
 
 VP_GRASP["action": A, "entity": {X}] -> V_GRASP[A] NP[X]
 
-V_GRASP["grasp"] -> grab | grasp | pick up
+V_GRASP["pick-up"] -> grab | grasp | pick up
 
 SIDE["left"] -> left
 SIDE["right"] -> right
@@ -31,9 +31,9 @@ V_BRING["transport"] -> bring | transport
 # Moving
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
-VP["action": A, "entity": X] -> V_MOVE[A] NP[X]
+VP["action": A, "entity": {X}] -> V_MOVE[A] NP[X]
 VP["action": A, "coordinate": C] -> V_MOVE[A] COORDINATE_2D[C]
-V_MOVE["move"] -> move to | goto | go to | drive to | navigate to
+V_MOVE["navigate-to"] -> move to | goto | go to | drive to | navigate to
 
 VP["action": A, "degrees": -90] -> V_ROTATE[A] left
 VP["action": A, "degrees": 90] -> V_ROTATE[A] right
