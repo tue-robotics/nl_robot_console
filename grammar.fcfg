@@ -20,6 +20,13 @@ V_GRASP["pick-up"] -> grab | grasp | pick up
 SIDE["left"] -> left
 SIDE["right"] -> right
 
+VP["action": "send-arm-goal", "symbolic": "reset", "side": S] -> reset SIDE[S] arm 
+
+VP["action": "send-gripper-goal", "goal": GSTATE, "side": S] -> GRIPPER_STATE[GSTATE] SIDE[S] gripper
+
+GRIPPER_STATE["open"] -> open
+GRIPPER_STATE["close"] -> close
+
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Bringing
 # - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -49,6 +56,12 @@ VP["action": A, "entity": X] -> V_INSPECT[A] NP[X]
 V_INSPECT["inspect"] -> inspect
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
+# World model
+# - - - - - - - - - - - - - - - - - - - - - - - - -
+
+VP["action": "reset-wm"] -> reset world model
+
+# - - - - - - - - - - - - - - - - - - - - - - - - -
 # Entities
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -69,7 +82,7 @@ ID["X"] -> $id[X]
 TYPE["X"] -> $type[X]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
-# Entities
+# Special types
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
 NUM[N] -> $number[N]
