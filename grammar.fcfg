@@ -31,8 +31,10 @@ GRIPPER_STATE["close"] -> close
 # Bringing
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
-VP["action": A, "entity": X, "loc": Y] -> V_BRING[A] NP[X] to NP[Y]
-V_BRING["transport"] -> bring | transport
+VP["action": "bring", "entity": X, "from": Y, "to": Z] -> bring NP[X] from NP[Y] to NP[Z]
+
+# VP["action": A, "entity": X, "loc": Y] -> V_BRING[A] NP[X] to NP[Y]
+# V_BRING["transport"] -> bring | transport
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Moving
