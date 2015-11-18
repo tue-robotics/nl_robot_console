@@ -28,6 +28,13 @@ GRIPPER_STATE["open"] -> open
 GRIPPER_STATE["close"] -> close
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
+# Looking
+# - - - - - - - - - - - - - - - - - - - - - - - - -
+
+VP["action": "look-at"] -> look at nothing
+VP["action": "look-at", "entity": X] -> look at NP[X]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - -
 # Bringing
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
