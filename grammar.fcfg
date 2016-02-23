@@ -20,9 +20,9 @@ V_GRASP["pick-up"] -> grab | grasp | pick up
 SIDE["left"] -> left
 SIDE["right"] -> right
 
-VP["action": "send-arm-goal", "symbolic": "reset", "side": S] -> reset SIDE[S] arm 
+VP["action": "arm-goal", "symbolic": "reset", "side": S] -> reset SIDE[S] arm 
 
-VP["action": "send-gripper-goal", "goal": GSTATE, "side": S] -> GRIPPER_STATE[GSTATE] SIDE[S] gripper
+VP["action": "gripper-goal", "goal": GSTATE, "side": S] -> GRIPPER_STATE[GSTATE] SIDE[S] gripper
 
 GRIPPER_STATE["open"] -> open
 GRIPPER_STATE["close"] -> close
