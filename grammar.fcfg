@@ -28,6 +28,17 @@ GRIPPER_STATE["open"] -> open
 GRIPPER_STATE["close"] -> close
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
+# Placing
+# - - - - - - - - - - - - - - - - - - - - - - - - -
+
+VP["action": A] -> V_PLACE[A]
+VP["action": A, "side": S] -> V_PLACE[A] with SIDE[S]
+VP["action": A, "entity": Y] -> V_PLACE[A] on NP[Y]
+VP["action": A, "entity": Y, "side": S] -> V_PLACE[A] on NP[Y] with SIDE[S]
+
+V_PLACE["place"] -> place | put
+
+# - - - - - - - - - - - - - - - - - - - - - - - - -
 # Looking
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
