@@ -1,6 +1,19 @@
 import unittest
-from ..cfgparser import CFGParser
-from ..cfgparser import parse_next_atom
+from ..cfgparser import *
+
+
+class TestOption(unittest.TestCase):
+    def test_option_equality(self):
+        option_a = Option(lsemantic='"left"', conjs=['left'])
+        option_b = Option(lsemantic='"left"', conjs=['left'])
+
+        self.assertEqual(option_a, option_b)
+
+    def test_option_inequality_1(self):
+        option_a = Option(lsemantic='"left"', conjs=['left'])
+        option_b = Option(lsemantic='"right"', conjs=['right'])
+
+        self.assertNotEqual(option_a, option_b)
 
 
 class TestCfgParser(unittest.TestCase):
@@ -16,6 +29,9 @@ class TestCfgParser(unittest.TestCase):
         rule = parser.rules["SIDE"]
         self.assertEqual(rule.lname, "SIDE")
         self.assertEqual(len(rule.options), 1)
+
+        # expected_option = Option(lsemantic='"left"', conjs=['left'])
+        # self.assertEqual(rule.options[0], expected_option)
 
     def test_add_rule_2(self):
         parser = CFGParser()
