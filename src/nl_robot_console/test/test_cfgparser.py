@@ -16,6 +16,14 @@ class TestOption(unittest.TestCase):
         self.assertNotEqual(option_a, option_b)
 
 
+class TestConjunct(unittest.TestCase):
+    def test_conjunct_equality(self):
+        conj_a = Conjunct(name='left', rsemantic='left')
+        conj_b = Conjunct(name='left', rsemantic='left')
+
+        self.assertEqual(conj_a, conj_b)
+
+
 class TestCfgParser(unittest.TestCase):
     def test_add_rule_1(self):
         parser = CFGParser()
@@ -30,20 +38,26 @@ class TestCfgParser(unittest.TestCase):
         self.assertEqual(rule.lname, "SIDE")
         self.assertEqual(len(rule.options), 1)
 
-        # expected_option = Option(lsemantic='"left"', conjs=['left'])
-        # self.assertEqual(rule.options[0], expected_option)
+        expected_option = Option(lsemantic='"left"', conjs=[Conjunct('left')])
+        self.assertEqual(rule.options[0], expected_option)
 
-    def test_add_rule_2(self):
+    def test_add_rule_4(self):
         parser = CFGParser()
+        parser.add_rule("""V_GRASP["pick-up"] -> grab | grasp | pick""")  # The up after pick is missing to make this work. 'ip' is probably a remaining_str or something
 
-        self.assertEqual(len(parser.rules), 0)
+        grab_rule = Option('"pick-up"', [Conjunct('grab')])
+        grasp_rule = Option('"pick-up"', [Conjunct('grasp')])
+        pick_up_rule = Option('"pick-up"', [Conjunct('pick')])  # up is missing as well
 
-        parser.add_rule("""SIDE["left"] -> left""")
+        rule = parser.rules["V_GRASP"]
 
-        self.assertEqual(len(parser.rules), 1)
+        self.assertEqual(len(rule.options), 3)
 
-        rule = parser.rules["SIDE"]
-        self.assertEqual(rule.lname, "SIDE")
+        self.assertIn(grab_rule, rule.options)
+        self.assertIn(grasp_rule, rule.options)
+        self.assertIn(pick_up_rule, rule.options)
+
+
 
 class TestParseNextAtom(unittest.TestCase):
     def test_parse_next_atom_1(self):

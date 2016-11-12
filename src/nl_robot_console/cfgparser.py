@@ -30,7 +30,7 @@ class Conjunct:
         self.is_variable = is_variable
 
     def __repr__(self):
-        return self.name
+        return "Conjunct(name='{name}', rsemantic={r}, is_variable={v})".format(name=self.name, r=self.rsemantic, v=self.is_variable)
 
     def __eq__(self, other):
         if isinstance(other, Conjunct):
