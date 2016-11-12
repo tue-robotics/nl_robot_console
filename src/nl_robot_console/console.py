@@ -1,16 +1,13 @@
 #! /usr/bin/python
-import sys
 import cmd
+import sys
+
+from action_server.srv import AddAction
+from ed.srv import SimpleQuery
+import rospy
+
 import cfgparser
 
-# Connection to robot
-import rospy
-import action_server
-from action_server import srv
-
-# Connection to world model
-import ed
-from ed import srv
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -18,8 +15,8 @@ class RobotConnection:
 
     def __init__(self, robot_name):
         self.robot_name = robot_name
-        self.cl_robot = rospy.ServiceProxy(self.robot_name + "/action_server/add_action", action_server.srv.AddAction)
-        self.cl_wm = rospy.ServiceProxy(self.robot_name + "/ed/simple_query", ed.srv.SimpleQuery)
+        self.cl_robot = rospy.ServiceProxy(self.robot_name + "/action_server/add_action", AddAction)
+        self.cl_wm = rospy.ServiceProxy(self.robot_name + "/ed/simple_query", SimpleQuery)
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -184,10 +181,10 @@ class REPL(cmd.Cmd):
         options = []
 
         colors = ["red", "green", "blue", "yellow", "brown", "orange", "black", "white", "pink", "purple", "gray"]
-        options += [cfgparser.Option("\"color\": \"%s\"" % c, [cfgparser.Conjunct(c)]) for c in colors ]
+        options += [cfgparser.Option("\"color\": \"%s\"" % c, [cfgparser.Conjunct(c)]) for c in colors]
 
         sizes = ["large", "medium", "small"]
-        options += [cfgparser.Option("\"size\": \"%s\"" % s, [cfgparser.Conjunct(s)]) for s in sizes ]
+        options += [cfgparser.Option("\"size\": \"%s\"" % s, [cfgparser.Conjunct(s)]) for s in sizes]
 
         return options
 

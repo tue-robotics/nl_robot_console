@@ -34,6 +34,9 @@ class Rule:
         self.lname = lname
         self.options = []
 
+    def __repr__(self):
+        return "Rule(lname='{lname}', options={opts})".format(lname=self.lname, opts=self.options)
+
 # ----------------------------------------------------------------------------------------------------
 
 class Tree:
@@ -59,7 +62,10 @@ class Tree:
         self.subtrees[idx] = tree
         return tree
 
+
+
     def __repr__(self):
+        # TODO: Make this print like a tree
         return str(zip(self.option.conjuncts, self.subtrees))
 
 # ----------------------------------------------------------------------------------------------------
@@ -157,6 +163,7 @@ class CFGParser:
         for opt in rule.options:
             T = Tree(opt)
             if self._parse((T, 0), words) != False:
+                # Simply take the first tree that successfully parses
                 return self.get_semantics(T)
 
         return False
