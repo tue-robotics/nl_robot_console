@@ -12,7 +12,7 @@ class Option:
             self.conjuncts = []
 
     def __repr__(self):
-        return "(%s, %s)" % (self.lsemantic, self.conjuncts)
+        return "Option(lsemantic='{lsem}', conjs={c})".format(lsem=self.lsemantic, c=self.conjuncts)
 
     def __eq__(self, other):
         if isinstance(other, Option):
