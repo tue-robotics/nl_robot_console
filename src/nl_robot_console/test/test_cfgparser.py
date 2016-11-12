@@ -24,6 +24,13 @@ class TestConjunct(unittest.TestCase):
         self.assertEqual(conj_a, conj_b)
 
 
+class TestRule(unittest.TestCase):
+    def test_rule_equality_1(self):
+        rule_a = Rule(lname='SIDE', options=[Option(lsemantic='"left"', conjs=[Conjunct('left')])])
+        rule_b = Rule(lname='SIDE', options=[Option(lsemantic='"left"', conjs=[Conjunct('left')])])
+
+        self.assertEqual(rule_a, rule_b)
+
 class TestCfgParser(unittest.TestCase):
     def test_add_rule_1(self):
         parser = CFGParser()

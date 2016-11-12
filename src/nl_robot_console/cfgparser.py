@@ -41,9 +41,9 @@ class Conjunct:
 
 class Rule:
 
-    def __init__(self, lname):
+    def __init__(self, lname, options=None):
         self.lname = lname
-        self.options = []
+        self.options = options if options else []
 
     def __repr__(self):
         return "Rule(lname='{lname}', options={opts})".format(lname=self.lname, opts=self.options)
@@ -53,6 +53,33 @@ class Rule:
             return self.lname == other.lname and self.options == other.options
 
         return False
+
+    @staticmethod
+    def from_config(s):
+        tmp = s.split(" -> ")
+        if len(tmp) != 2:
+            raise Exception
+
+        (lname, lsem, outstr) = parse_next_atom(tmp[0].strip())
+
+        # See if a rule with this lname already exists. If not, add it
+        rule = Rule(lname)
+
+        opt_strs = tmp[1].split("|")
+
+        for opt_str in opt_strs:
+            opt_str = opt_str.strip()
+
+            opt = Option(lsem)
+
+            while opt_str:
+                (rname, rsem, opt_str) = parse_next_atom(opt_str)
+                is_variable = rname[0].isupper()
+                opt.conjuncts += [Conjunct(rname, rsem, is_variable)]
+
+            rule.options += [opt]
+
+        return rule
 
 # ----------------------------------------------------------------------------------------------------
 
