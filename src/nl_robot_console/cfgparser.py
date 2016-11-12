@@ -12,7 +12,13 @@ class Option:
             self.conjuncts = []
 
     def __repr__(self):
-        return "(\"%s\", %s)" % (self.lsemantic, self.conjuncts)
+        return "(%s, %s)" % (self.lsemantic, self.conjuncts)
+
+    def __eq__(self, other):
+        if isinstance(other, Option):
+            return self.lsemantic == other.lsemantic and self.conjuncts == other.conjuncts
+
+        return False
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -26,6 +32,11 @@ class Conjunct:
     def __repr__(self):
         return self.name
 
+    def __eq__(self, other):
+        if isinstance(other, Conjunct):
+            return self.name == other.name and self.rsemantic == other.rsemantic and self.is_variable == other.is_variable
+        return False
+
 # ----------------------------------------------------------------------------------------------------
 
 class Rule:
@@ -36,6 +47,12 @@ class Rule:
 
     def __repr__(self):
         return "Rule(lname='{lname}', options={opts})".format(lname=self.lname, opts=self.options)
+
+    def __eq__(self, other):
+        if isinstance(other, Rule):
+            return self.lname == other.lname and self.options == other.options
+
+        return False
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -61,8 +78,6 @@ class Tree:
         tree.parent_idx = idx
         self.subtrees[idx] = tree
         return tree
-
-
 
     def __repr__(self):
         # TODO: Make this print like a tree
