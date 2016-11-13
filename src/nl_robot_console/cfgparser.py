@@ -38,7 +38,8 @@ class Option:
 
     def pretty_print(self, level=0):
         tabs = level*"\t"
-        ret = tabs + "Option(lsemantic='{lsem}'".format(lsem=self.lsemantic)
+        ret = "\n"
+        ret += tabs + "Option(lsemantic='{lsem}'".format(lsem=self.lsemantic)
         for conj in self.conjuncts:
             ret += "\n"
             ret += tabs + "\t" + "conj={c}".format(c=conj)
