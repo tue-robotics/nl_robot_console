@@ -153,32 +153,14 @@ class CFGParser:
         return parser
 
     def add_rule(self, s):
-        tmp = s.split(" -> ")
-        if len(tmp) != 2:
-            raise Exception
-
-        (lname, lsem, outstr) = parse_next_atom(tmp[0].strip())
+        rule = Rule.from_cfg_def(s)
 
         # See if a rule with this lname already exists. If not, add it
-        if lname in self.rules:
-            rule = self.rules[lname]
+        if rule.lname in self.rules:
+            original_rule = self.rules[rule.lname]
+            original_rule.options += rule.options
         else:
-            rule = Rule(lname)
-            self.rules[lname] = rule
-
-        opt_strs = tmp[1].split("|")
-
-        for opt_str in opt_strs:
-            opt_str = opt_str.strip()
-
-            opt = Option(lsem)
-
-            while opt_str:
-                (rname, rsem, opt_str) = parse_next_atom(opt_str)
-                is_variable = rname[0].isupper()
-                opt.conjuncts += [Conjunct(rname, rsem, is_variable)]
-
-            rule.options += [opt]
+            self.rules[rule.lname] = rule
 
     def set_function(self, name, func):
         self.functions[name] = func
