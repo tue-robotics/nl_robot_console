@@ -35,6 +35,15 @@ class Option:
                 opt.conjuncts += [Conjunct(rname, rsem, is_variable)]
 
             yield opt
+
+    def pretty_print(self, level=0):
+        tabs = level*"\t"
+        ret = tabs + "Option(lsemantic='{lsem}'".format(lsem=self.lsemantic)
+        for conj in self.conjuncts:
+            ret += "\n"
+            ret += tabs + "\t" + "conj={c}".format(c=conj)
+        ret += ")"
+        return ret
 # ----------------------------------------------------------------------------------------------------
 
 class Conjunct:
@@ -111,6 +120,18 @@ class Tree:
     def __repr__(self):
         # TODO: Make this print like a tree
         return str(zip(self.option.conjuncts, self.subtrees))
+
+    def pretty_print(self, level=0):
+        tabs = "\t" * level
+        ret = tabs + self.option.pretty_print(level=level)
+        for subtree in self.subtrees:
+            if hasattr(subtree, "pretty_print"):
+                ret += subtree.pretty_print(level=level+1)
+            else:
+                ret += str(subtree)
+            ret += "\n"
+
+        return ret
 
 # ----------------------------------------------------------------------------------------------------
 
