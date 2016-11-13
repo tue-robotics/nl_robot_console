@@ -31,6 +31,16 @@ class TestRule(unittest.TestCase):
 
         self.assertEqual(rule_a, rule_b)
 
+    def test_from_cfg_def(self):
+        line = """SIDE["left"] -> left"""
+        rule = Rule.from_cfg_def(line)
+
+        self.assertEqual(rule.lname, "SIDE")
+        self.assertEqual(len(rule.options), 1)
+
+        expected_option = Option(lsemantic='"left"', conjs=[Conjunct('left')])
+        self.assertEqual(rule.options[0], expected_option)
+
 class TestCfgParser(unittest.TestCase):
     def test_add_rule_1(self):
         parser = CFGParser()

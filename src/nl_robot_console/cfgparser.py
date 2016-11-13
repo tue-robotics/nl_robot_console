@@ -55,7 +55,7 @@ class Rule:
         return False
 
     @staticmethod
-    def from_config(s):
+    def from_cfg_def(s):
         tmp = s.split(" -> ")
         if len(tmp) != 2:
             raise Exception
