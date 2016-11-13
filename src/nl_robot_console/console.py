@@ -206,6 +206,13 @@ def main():
 
     try:
         repl = REPL(os.path.join(pkgdir, "grammar.fcfg"))
+
+        try:
+            cmd = sys.argv[1]
+            repl.default(cmd)
+        except:
+            pass
+
         repl.cmdloop()
     except KeyboardInterrupt:
         pass
