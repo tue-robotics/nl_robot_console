@@ -210,6 +210,7 @@ def main():
         try:
             cmd = sys.argv[1]
             repl.default(cmd)
+            exit(0)
         except:
             pass
 
