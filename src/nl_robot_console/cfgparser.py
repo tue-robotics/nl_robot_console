@@ -20,6 +20,21 @@ class Option:
 
         return False
 
+    @staticmethod
+    def from_cfg_def(option_definition, left_semantics):
+        opt_strs = option_definition.split("|")
+
+        for opt_str in opt_strs:
+            opt_str = opt_str.strip()
+
+            opt = Option(left_semantics)
+
+            while opt_str:
+                (rname, rsem, opt_str) = parse_next_atom(opt_str)
+                is_variable = rname[0].isupper()
+                opt.conjuncts += [Conjunct(rname, rsem, is_variable)]
+
+            yield opt
 # ----------------------------------------------------------------------------------------------------
 
 class Conjunct:
@@ -62,22 +77,9 @@ class Rule:
 
         (lname, lsem, outstr) = parse_next_atom(tmp[0].strip())
 
-        # See if a rule with this lname already exists. If not, add it
         rule = Rule(lname)
 
-        opt_strs = tmp[1].split("|")
-
-        for opt_str in opt_strs:
-            opt_str = opt_str.strip()
-
-            opt = Option(lsem)
-
-            while opt_str:
-                (rname, rsem, opt_str) = parse_next_atom(opt_str)
-                is_variable = rname[0].isupper()
-                opt.conjuncts += [Conjunct(rname, rsem, is_variable)]
-
-            rule.options += [opt]
+        rule.options = list(Option.from_cfg_def(tmp[1], lsem))
 
         return rule
 
