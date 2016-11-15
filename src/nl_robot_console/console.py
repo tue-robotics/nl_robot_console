@@ -122,6 +122,8 @@ class REPL(cmd.Cmd):
             if sem == False:
                 print("\n    I do not understand.\n")
                 return False
+            else:
+                print sem
 
             import yaml
             params = yaml.load(sem)
