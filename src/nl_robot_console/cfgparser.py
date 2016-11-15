@@ -37,19 +37,19 @@ class Option:
             yield opt
 
     def pretty_print(self, level=0):
-        tabs = level*"\t"
+        # print self, level
+        tabs = level*"----"
         ret = "\n"
         ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(lsem=self.lsemantic)
         for conj in self.conjuncts:
             ret += "\n"
-            ret += tabs + "\t" + "{c},".format(c=conj)
+            ret += tabs + "----" + "{c},".format(c=conj)
         ret += "])"
         return ret
 # ----------------------------------------------------------------------------------------------------
 
 class Conjunct:
-    """"A Conjunct is a leaf in the parse-tree, there are no other branches to dive into.
-    A Conjunct can have some options though (if is_variable=True), but those are single words"""
+    """"A Conjunct is a placeholder in the parse-tree, which can be filled in by an Option or a word"""
 
     def __init__(self, name, rsemantic="", is_variable=False):
         """:param name the word or variable
@@ -66,6 +66,9 @@ class Conjunct:
         if isinstance(other, Conjunct):
             return self.name == other.name and self.rsemantic == other.rsemantic and self.is_variable == other.is_variable
         return False
+
+    def pretty_print(self, level=0):
+        return str(self)
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -128,14 +131,14 @@ class Tree:
         return str(zip(self.option.conjuncts, self.subtrees))
 
     def pretty_print(self, level=0):
+        # print self, level
         tabs = "\t" * level
-        ret = tabs + self.option.pretty_print(level=level)
-        for subtree in self.subtrees:
+        ret = "" #"#tabs + self.option.pretty_print(level=level)
+        for conjunct, subtree in zip(self.option.conjuncts, self.subtrees):
+            ret += tabs + str(conjunct) + "\n"
             if hasattr(subtree, "pretty_print"):
                 ret += subtree.pretty_print(level=level+1)
-            else:
-                ret += str(subtree)
-            ret += "\n"
+                # ret += "\n"
 
         return ret
 
