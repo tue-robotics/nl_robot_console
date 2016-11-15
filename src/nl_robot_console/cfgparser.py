@@ -1,5 +1,5 @@
 #! /usr/bin/python
-
+# -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------------------------------
 
 class Option:
@@ -132,7 +132,7 @@ class Tree:
 
     def pretty_print(self, level=0):
         # print self, level
-        tabs = "\t" * level
+        tabs = (level)*'    ' + "└───" # * level
         ret = "" #"#tabs + self.option.pretty_print(level=level)
         for conjunct, subtree in zip(self.option.conjuncts, self.subtrees):
             ret += tabs + str(conjunct) + "\n"
