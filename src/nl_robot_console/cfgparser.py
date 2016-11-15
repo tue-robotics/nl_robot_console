@@ -2,6 +2,17 @@
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------------------------------
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 class Option:
 
     def __init__(self, lsemantic = "", conjs = None):
@@ -68,7 +79,10 @@ class Conjunct:
         return False
 
     def pretty_print(self, level=0):
-        return str(self)
+        if self.is_variable or "$" in self.name:
+            return self.name# + str(self)
+        else:
+            return bcolors.OKGREEN + self.name + bcolors.ENDC# + str(self)
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -132,10 +146,12 @@ class Tree:
 
     def pretty_print(self, level=0):
         # print self, level
-        tabs = (level)*'    ' + "└───" # * level
+        #tabs = (level-1)*'    ' + "│   ├───"
+        tabs = (level)*'    ' + "└───"
+        #tabs = "\t" * level #
         ret = "" #"#tabs + self.option.pretty_print(level=level)
         for conjunct, subtree in zip(self.option.conjuncts, self.subtrees):
-            ret += tabs + str(conjunct) + "\n"
+            ret += tabs + conjunct.pretty_print() + "\n"
             if hasattr(subtree, "pretty_print"):
                 ret += subtree.pretty_print(level=level+1)
                 # ret += "\n"
