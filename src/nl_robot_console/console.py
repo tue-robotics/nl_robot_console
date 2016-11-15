@@ -204,17 +204,18 @@ def main():
     import sys, os
     pkgdir = os.path.dirname(sys.argv[0])
 
+    cmd = None
+    if len(sys.argv) >= 2:
+        cmd = sys.argv[1]
+
     try:
         repl = REPL(os.path.join(pkgdir, "grammar.fcfg"))
 
-        try:
-            cmd = sys.argv[1]
+        if cmd:
             repl.default(cmd)
             exit(0)
-        except:
-            pass
-
-        repl.cmdloop()
+        else:
+            repl.cmdloop()
     except KeyboardInterrupt:
         pass
 
