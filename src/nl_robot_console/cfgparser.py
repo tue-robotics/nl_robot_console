@@ -39,23 +39,28 @@ class Option:
     def pretty_print(self, level=0):
         tabs = level*"\t"
         ret = "\n"
-        ret += tabs + "Option(lsemantic='{lsem}'".format(lsem=self.lsemantic)
+        ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(lsem=self.lsemantic)
         for conj in self.conjuncts:
             ret += "\n"
-            ret += tabs + "\t" + "conj={c}".format(c=conj)
-        ret += ")"
+            ret += tabs + "\t" + "{c},".format(c=conj)
+        ret += "])"
         return ret
 # ----------------------------------------------------------------------------------------------------
 
 class Conjunct:
+    """"A Conjunct is a leaf in the parse-tree, there are no other branches to dive into.
+    A Conjunct can have some options though (if is_variable=True), but those are single words"""
 
-    def __init__(self, name, rsemantic = "", is_variable = False):
+    def __init__(self, name, rsemantic="", is_variable=False):
+        """:param name the word or variable
+        :param rsemantic what option is the Conjunct part of
+        :param is_variable is the conjunct variable or terminal?"""
         self.name = name
         self.rsemantic = rsemantic
         self.is_variable = is_variable
 
     def __repr__(self):
-        return "Conjunct(name='{name}', rsemantic={r}, is_variable={v})".format(name=self.name, r=self.rsemantic, v=self.is_variable)
+        return "Conjunct(name='{name}', rsemantic='{r}', is_variable={v})".format(name=self.name, r=self.rsemantic, v=self.is_variable)
 
     def __eq__(self, other):
         if isinstance(other, Conjunct):
@@ -211,6 +216,7 @@ class CFGParser:
         for opt in rule.options:
             T = Tree(opt)
             if self._parse((T, 0), words) != False:
+                print T.pretty_print()
                 # Simply take the first tree that successfully parses
                 return self.get_semantics(T)
 
