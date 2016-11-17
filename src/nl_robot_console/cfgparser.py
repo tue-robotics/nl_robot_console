@@ -226,7 +226,7 @@ class CFGParser:
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def parse(self, target, words):
+    def parse(self, target, words, debug=False):
         if not target in self.rules:
             return False
 
@@ -235,7 +235,8 @@ class CFGParser:
         for opt in rule.options:
             T = Tree(opt)
             if self._parse((T, 0), words) != False:
-                print T.pretty_print()
+                if debug:
+                    print T.pretty_print()
                 # Simply take the first tree that successfully parses
                 return self.get_semantics(T)
 
