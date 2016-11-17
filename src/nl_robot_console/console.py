@@ -4,6 +4,7 @@ import sys
 
 from action_server.srv import AddAction
 from ed.srv import SimpleQuery
+from nl_robot_console.srv import TextCommandRequest, TextCommandReply
 import rospy
 
 import cfgparser
@@ -35,6 +36,8 @@ class REPL(cmd.Cmd):
         self._get_or_create_robot_connection("amigo")
 
         self._clear_caches()
+
+        self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommandRequest, self.default)
 
     def _load_grammar(self):
         self.parser = cfgparser.CFGParser.fromfile(self.grammar_filename)
