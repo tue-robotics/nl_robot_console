@@ -96,7 +96,7 @@ class REPL(cmd.Cmd):
             exit   - quits
         """
 
-    def default(self, command):
+    def default(self, command, debug=False):
         if not command:
             return False
         elif command in ["quit", "exit"]:
@@ -104,7 +104,7 @@ class REPL(cmd.Cmd):
         elif command in ["reload"]:
             self._load_grammar()
         else:
-            sem = self.parser.parse("C", command.strip().split(" "))
+            sem = self.parser.parse("C", command.strip().split(" "), debug=debug)
             if sem == False:
                 print("\n    I do not understand.\n")
                 return False
@@ -205,14 +205,22 @@ def main():
     pkgdir = os.path.dirname(sys.argv[0])
 
     cmd = None
+    debug = False
+    if len(sys.argv) >= 2:
+        import ipdb; ipdb.set_trace()
+        debug = "--debug" in sys.argv
+        if debug:
+            sys.argv.remove("--debug")
+
     if len(sys.argv) >= 2:
         cmd = sys.argv[1]
+
 
     try:
         repl = REPL(os.path.join(pkgdir, "grammar.fcfg"))
 
         if cmd:
-            repl.default(cmd)
+            repl.default(cmd, debug=debug)
             exit(0)
         else:
             repl.cmdloop()
