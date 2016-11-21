@@ -4,7 +4,7 @@ import sys
 
 from action_server.srv import AddAction
 from ed.srv import SimpleQuery
-from nl_robot_console.srv import TextCommandRequest, TextCommandReply
+from nl_robot_console.srv import TextCommandRequest, TextCommand
 import rospy
 
 import cfgparser
@@ -37,7 +37,7 @@ class REPL(cmd.Cmd):
 
         self._clear_caches()
 
-        self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommandRequest, self.default)
+        self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommand, self.default)
 
     def _load_grammar(self):
         self.parser = cfgparser.CFGParser.fromfile(self.grammar_filename)
@@ -210,7 +210,6 @@ def main():
     cmd = None
     debug = False
     if len(sys.argv) >= 2:
-        import ipdb; ipdb.set_trace()
         debug = "--debug" in sys.argv
         if debug:
             sys.argv.remove("--debug")
