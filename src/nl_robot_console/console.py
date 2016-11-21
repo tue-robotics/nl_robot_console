@@ -4,7 +4,7 @@ import sys
 
 from action_server.srv import AddAction
 from ed.srv import SimpleQuery
-from nl_robot_console.srv import TextCommandRequest, TextCommandReply
+from nl_robot_console.srv import TextCommandRequest, TextCommandResponse, TextCommand
 import rospy
 
 import cfgparser
@@ -37,7 +37,17 @@ class REPL(cmd.Cmd):
 
         self._clear_caches()
 
-        self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommandRequest, self.default)
+        self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommand, self.srvTextCommand)
+
+    def srvTextCommand(self, request):
+        response = TextCommandResponse()
+        try:
+            self.default(request.command, True)
+            response.success = True
+        except:
+            response.success = False
+
+        return response
 
     def _load_grammar(self):
         self.parser = cfgparser.CFGParser.fromfile(self.grammar_filename)
@@ -226,7 +236,9 @@ def main():
             repl.default(cmd, debug=debug)
             exit(0)
         else:
-            repl.cmdloop()
+            # repl.cmdloop()
+            rospy.init_node("nl_robot_console")
+            rospy.spin()
     except KeyboardInterrupt:
         pass
 
