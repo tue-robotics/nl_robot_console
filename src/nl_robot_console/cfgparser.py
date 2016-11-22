@@ -2,6 +2,27 @@
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------------------------------
 
+"""Grammars for the ContextFreeGrammarParser are built from production rules, corresponding to the Rule-class below.
+This means that sentences can be generated (and auto-completed), according to this grammar.
+Moreover, sentences can be parsed according to the same rules.
+
+If there is a rule "A -> one", then that means that to generate something according to rule A, the generated sentence is "one"
+In this example "A" is the lname. lname stands for left name, as it's on the left of the arrow.
+Sentences are produced and parsed from left to right.
+
+There can be multiple lines in the grammar definition file with the same lname, which simply add ways to produce/parse sentences for that lname.
+
+Rules can refer to each other via their lname.
+If a rule A defines a way to start a sentence and refers to B, that means the completion of rule A is one via rule B.
+For example:
+A -> go B
+B -> forward
+B -> backward
+can generate the sentences "go forward" and "go backward"
+
+https://www.tutorialspoint.com/automata_theory/context_free_grammar_introduction.htm
+"""
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -14,8 +35,12 @@ class bcolors:
 
 
 class Option:
-
+    """An option is a continuation of a sentence of where there are multiple ways to continue the sentence.
+    These choices in an Option are called called conjuncts."""
     def __init__(self, lsemantic = "", conjs = None):
+        """Constructor of an Option
+        :param lsemantic the name of the semantics that the option is the continuation of. E.g. if the lsemantic is some action, this option might be the object to perform that action with.
+        :param conjs the choices in this option"""
         self.lsemantic = lsemantic
         if conjs:
             self.conjuncts = conjs
@@ -33,6 +58,7 @@ class Option:
 
     @staticmethod
     def from_cfg_def(option_definition, left_semantics):
+        """Parse text from the CFG definition into an Option and the choices it is composed of. """
         opt_strs = option_definition.split("|")
 
         for opt_str in opt_strs:
