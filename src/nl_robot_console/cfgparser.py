@@ -6,6 +6,8 @@
 This means that sentences can be generated (and auto-completed), according to this grammar.
 Moreover, sentences can be parsed according to the same rules.
 
+See https://www.tutorialspoint.com/automata_theory/context_free_grammar_introduction.htm for an introduction to context free grammars.
+
 If there is a rule "A -> one", then that means that to generate something according to rule A, the generated sentence is "one"
 In this example "A" is the lname. lname stands for left name, as it's on the left of the arrow.
 Sentences are produced and parsed from left to right.
@@ -14,13 +16,39 @@ There can be multiple lines in the grammar definition file with the same lname, 
 
 Rules can refer to each other via their lname.
 If a rule A defines a way to start a sentence and refers to B, that means the completion of rule A is one via rule B.
-For example:
+For example, the grammar:
 A -> go B
 B -> forward
 B -> backward
-can generate the sentences "go forward" and "go backward"
+can generate the sentences "go forward" and "go backward". And thus parse these sentences as well.
 
-https://www.tutorialspoint.com/automata_theory/context_free_grammar_introduction.htm
+Rules can also have variables that will be assigned to when a sentence is parsed.
+For example, the line:
+
+    VP["action": A] -> V_PLACE[A]
+
+adds a rule for the lname VP, with a field called "action", which will be set to A.
+The value for A is determined by a rule with lname V_PLACE, which will determine the value of A.
+
+The rule
+
+    V_PLACE["place"] -> place | put
+
+applies when the text is "place" or "put".
+When that is the case, the rule applies and the text "place" is filled in for A.
+That means when the text "put" is typed, the variable "action" will be assigned the value "place".
+
+The whole grammar has an entry point, or root rule, from which all the other rules are referred.
+Each rule forms branch upon branch, together building a Tree.
+
+When a sentence is parsed, a Tree is built. While this happens, the variables are collected.
+When the Tree is completely parsed, the collected variables and their assignments are fetched from the Tree with the get_semantics-method.
+This returns a dictionary that maps a variable to a value.
+
+Semantics describe what a sentence means. In this case, it describes what action to perform and with what to perform it.
+
+The semantics are returnd to whomever called CFGParser.parse(...), usually the REPL on console.py.
+The REPL sends the semantics to the action_server, which ground the semantics by implementing the actions.
 """
 
 class bcolors:
@@ -186,11 +214,14 @@ class Tree:
 
 # ----------------------------------------------------------------------------------------------------
 
-# Returns (name, semantics, remaining_str)
-# For example for "VP[X, Y] foo bar" it returns:
-#     ("VP", "X, Y", "foo bar")
-#
 def parse_next_atom(s):
+    """
+    Returns (name, semantics, remaining_str)
+    For example for "VP[X, Y] foo bar" it returns:
+         ("VP", "X, Y", "foo bar")
+    :param s:
+    :return: Tuple with the rule's lname, the variables involved and the remaining text: ("VP", "X, Y", "foo bar")
+    """
     s = s.strip()
 
     for i in range(0, len(s)):
@@ -238,17 +269,18 @@ class CFGParser:
         self.functions[name] = func
 
     def get_semantics(self, tree):
-
-        sem = tree.option.lsemantic
+        """Get the semantics of a tree.
+        This means that variables are unified with their values, which may be recursively gotten from the tree's subtrees. """
+        semantics = tree.option.lsemantic
         for i in range(0, len(tree.subtrees)):
             conj = tree.option.conjuncts[i]
             subtree = tree.subtrees[i]
 
             if subtree:
-                child_sem = self.get_semantics(subtree)
-                sem = sem.replace(conj.rsemantic, child_sem)
+                child_semantics = self.get_semantics(subtree)
+                semantics = semantics.replace(conj.rsemantic, child_semantics)
 
-        return sem
+        return semantics
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
