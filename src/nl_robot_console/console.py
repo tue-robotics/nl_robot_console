@@ -111,6 +111,8 @@ class REPL(cmd.Cmd):
         """
 
     def default(self, command, debug=False):
+        debug = debug or self.debug
+
         if not command:
             return False
         elif command in ["quit", "exit"]:
@@ -118,15 +120,16 @@ class REPL(cmd.Cmd):
         elif command in ["reload"]:
             self._load_grammar()
         else:
-            sem = self.parser.parse("C", command.strip().split(" "), debug=debug or self.debug)
+            sem = self.parser.parse("C", command.strip().split(" "), debug=debug)
             if sem == False:
                 print("\n    I do not understand.\n")
                 return False
-            else:
-                print sem
 
             import yaml
             params = yaml.load(sem)
+
+            if debug:
+                print params
 
             if "robot" in params:
                 robot_name = params["robot"]

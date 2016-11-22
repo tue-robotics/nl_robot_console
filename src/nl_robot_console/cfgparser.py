@@ -6,7 +6,7 @@
 This means that sentences can be generated (and auto-completed), according to this grammar.
 Moreover, sentences can be parsed according to the same rules.
 
-See https://www.tutorialspoint.com/automata_theory/context_free_grammar_introduction.htm for an introduction to context free grammars.
+See https://www.tutorialspoint.com/automata_theory/context_free_grammar_introduction.htm and https://en.wikipedia.org/wiki/Context-free_grammar for an introduction to context free grammars.
 
 If there is a rule "A -> one", then that means that to generate something according to rule A, the generated sentence is "one"
 In this example "A" is the lname. lname stands for left name, as it's on the left of the arrow.
@@ -43,12 +43,12 @@ Each rule forms branch upon branch, together building a Tree.
 
 When a sentence is parsed, a Tree is built. While this happens, the variables are collected.
 When the Tree is completely parsed, the collected variables and their assignments are fetched from the Tree with the get_semantics-method.
-This returns a dictionary that maps a variable to a value.
+This returns a string. However, this string represents a (nested) dictionary that maps a variable to a value.
 
 Semantics describe what a sentence means. In this case, it describes what action to perform and with what to perform it.
 
-The semantics are returnd to whomever called CFGParser.parse(...), usually the REPL on console.py.
-The REPL sends the semantics to the action_server, which ground the semantics by implementing the actions.
+The semantics are returned to whomever called CFGParser.parse(...), usually the REPL on console.py.
+The REPL sends the semantics to the action_server, which grounds the semantics by implementing the actions.
 """
 
 class bcolors:
