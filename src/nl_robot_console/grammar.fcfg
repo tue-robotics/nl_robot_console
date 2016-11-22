@@ -76,6 +76,20 @@ VP["action": A, "entity": X] -> V_INSPECT[A] NP[X]
 V_INSPECT["inspect"] -> inspect
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
+# Remembering locations
+# - - - - - - - - - - - - - - - - - - - - - - - - -
+
+VP["action": A, "name": N] -> V_REMEMBER_LOC[A] NUM[N]
+VP["action": A, "name": X] -> V_REMEMBER_LOC[A] LOCNAME[X]
+
+V_REMEMBER_LOC["remember-loc"] -> remember this location as | store this location as | remember this as location | store this as location
+LOCNAME["loc_a"] -> loc_a
+LOCNAME["loc_b"] -> loc_b
+LOCNAME["loc_c"] -> loc_c
+
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - -
 # World model
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 
