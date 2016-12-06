@@ -1,16 +1,14 @@
 #! /usr/bin/python
-import sys
 import cmd
+import sys
+
+from action_server.srv import AddAction
+from ed.srv import SimpleQuery
+from nl_robot_console.srv import TextCommandRequest, TextCommandResponse, TextCommand
+import rospy
+
 import cfgparser
 
-# Connection to robot
-import rospy
-import action_server
-from action_server import srv
-
-# Connection to world model
-import ed
-from ed import srv
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -18,19 +16,20 @@ class RobotConnection:
 
     def __init__(self, robot_name):
         self.robot_name = robot_name
-        self.cl_robot = rospy.ServiceProxy(self.robot_name + "/action_server/add_action", action_server.srv.AddAction)
-        self.cl_wm = rospy.ServiceProxy(self.robot_name + "/ed/simple_query", ed.srv.SimpleQuery)
+        self.cl_robot = rospy.ServiceProxy(self.robot_name + "/action_server/add_action", AddAction)
+        self.cl_wm = rospy.ServiceProxy(self.robot_name + "/ed/simple_query", SimpleQuery)
 
 # ----------------------------------------------------------------------------------------------------
 
 class REPL(cmd.Cmd):
 
-    def __init__(self, grammar_filename):
+    def __init__(self, grammar_filename, debug=False):
         cmd.Cmd.__init__(self)
         self.prompt = "> "
         self.use_rawinput = True
         self.grammar_filename = grammar_filename
         self._load_grammar()
+        self.debug = debug
 
         # Default robot connection
         self.robot_connection = None
@@ -38,6 +37,18 @@ class REPL(cmd.Cmd):
         self._get_or_create_robot_connection("amigo")
 
         self._clear_caches()
+
+        self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommand, self.srvTextCommand)
+
+    def srvTextCommand(self, request):
+        response = TextCommandResponse()
+        try:
+            self.default(request.command, True)
+            response.success = True
+        except:
+            response.success = False
+
+        return response
 
     def _load_grammar(self):
         self.parser = cfgparser.CFGParser.fromfile(self.grammar_filename)
@@ -99,7 +110,9 @@ class REPL(cmd.Cmd):
             exit   - quits
         """
 
-    def default(self, command):
+    def default(self, command, debug=False):
+        debug = debug or self.debug
+
         if not command:
             return False
         elif command in ["quit", "exit"]:
@@ -107,13 +120,16 @@ class REPL(cmd.Cmd):
         elif command in ["reload"]:
             self._load_grammar()
         else:
-            sem = self.parser.parse("C", command.strip().split(" "))
+            sem = self.parser.parse("C", command.strip().split(" "), debug=debug)
             if sem == False:
                 print("\n    I do not understand.\n")
                 return False
 
             import yaml
             params = yaml.load(sem)
+
+            if debug:
+                print params
 
             if "robot" in params:
                 robot_name = params["robot"]
@@ -184,10 +200,10 @@ class REPL(cmd.Cmd):
         options = []
 
         colors = ["red", "green", "blue", "yellow", "brown", "orange", "black", "white", "pink", "purple", "gray"]
-        options += [cfgparser.Option("\"color\": \"%s\"" % c, [cfgparser.Conjunct(c)]) for c in colors ]
+        options += [cfgparser.Option("\"color\": \"%s\"" % c, [cfgparser.Conjunct(c)]) for c in colors]
 
         sizes = ["large", "medium", "small"]
-        options += [cfgparser.Option("\"size\": \"%s\"" % s, [cfgparser.Conjunct(s)]) for s in sizes ]
+        options += [cfgparser.Option("\"size\": \"%s\"" % s, [cfgparser.Conjunct(s)]) for s in sizes]
 
         return options
 
@@ -207,9 +223,34 @@ def main():
     import sys, os
     pkgdir = os.path.dirname(sys.argv[0])
 
+    cmd = None
+    debug = False
+    service = False
+    if len(sys.argv) >= 2:
+        debug = "--debug" in sys.argv
+        if debug:
+            sys.argv.remove("--debug")
+
+    if len(sys.argv) >= 2:
+        service = "--service" in sys.argv
+        if service:
+            sys.argv.remove("--service")
+
+    if len(sys.argv) >= 2:
+        cmd = sys.argv[1]
+
+
     try:
-        repl = REPL(os.path.join(pkgdir, "grammar.fcfg"))
-        repl.cmdloop()
+        repl = REPL(os.path.join(pkgdir, "grammar.fcfg"), debug=debug)
+
+        if cmd:
+            repl.default(cmd, debug=debug)
+            exit(0)
+        elif service:
+            rospy.init_node("nl_robot_console")
+            rospy.spin()
+        else:
+            repl.cmdloop()
     except KeyboardInterrupt:
         pass
 
