@@ -4,6 +4,7 @@ project(nl_robot_console)
 find_package(catkin REQUIRED COMPONENTS
       message_generation
       std_msgs
+      grammar_parser
 )
 
 catkin_python_setup()
