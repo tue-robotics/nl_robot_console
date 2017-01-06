@@ -7,7 +7,7 @@ from ed.srv import SimpleQuery
 from nl_robot_console.srv import TextCommandRequest, TextCommandResponse, TextCommand
 import rospy
 
-import cfgparser
+from grammar_parser import cfgparser
 
 
 # ----------------------------------------------------------------------------------------------------
