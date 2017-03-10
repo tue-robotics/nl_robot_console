@@ -39,6 +39,8 @@ class REPL(cmd.Cmd):
         self._clear_caches()
 
         self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommand, self.srvTextCommand)
+        
+        # TODO #5: add a dictionary to record that "ice_tea" must map back to "ice tea"
 
     def srvTextCommand(self, request):
         response = TextCommandResponse()
@@ -124,6 +126,7 @@ class REPL(cmd.Cmd):
             if sem == False:
                 print("\n    I do not understand.\n")
                 return False
+            # TODO #5: Here, map the "ice_tea" back to the original "ice tea"
 
             import yaml
             params = yaml.load(sem)
@@ -192,6 +195,7 @@ class REPL(cmd.Cmd):
         opts = []
         for t in types:
             if t != "":
+                # TODO #5: Here, map the "ice tea" back to the grammar-parseable "ice_tea"
                 opts += [cfgparser.Option(t, [cfgparser.Conjunct(t)])]
 
         return opts
