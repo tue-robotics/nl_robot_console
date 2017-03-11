@@ -16,7 +16,7 @@ class RobotConnection:
 
     def __init__(self, robot_name):
         self.robot_name = robot_name
-        self.cl_robot = rospy.ServiceProxy("/state_machine/add_action", AddAction)
+        self.cl_robot = rospy.ServiceProxy("/state_machine_py/add_action", AddAction)
         self.cl_wm = rospy.ServiceProxy(self.robot_name + "/ed/simple_query", SimpleQuery)
 
 # ----------------------------------------------------------------------------------------------------
