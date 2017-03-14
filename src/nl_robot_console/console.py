@@ -21,6 +21,35 @@ class RobotConnection:
 
 # ----------------------------------------------------------------------------------------------------
 
+def recurse_replace_in_dict(d, mapping):
+    """
+    Recursively replace values in a dictionary according to some mapping, if the mapping has an entry
+    :param d: a python dictionary in which some items must be replaced
+    :param mapping: a python dictionary
+    :return: the dictionary with some values replaces according to the given mapping
+
+    >>> mapping = {'A': 'apple', 'B':'banana'}
+    >>> flat = {'a': 'A', 'b': 'B'}
+    >>> recurse_replace_in_dict(flat, mapping)
+    {'a': 'apple', 'b': 'banana'}
+
+    >>> flat = {'a': 'A', 'b': {'c':'courgette'}}
+    >>> recurse_replace_in_dict(flat, mapping)
+    {'a': 'apple', 'b': {'c': 'courgette'}}
+
+    >>> deep_nested = {'a': 'A', 'b': {'c':{'a': 'A', 'b': 'B'}}}
+    >>> recurse_replace_in_dict(deep_nested, mapping)
+    {'a': 'apple', 'b': {'c': {'a': 'apple', 'b': 'banana'}}}
+    """
+    for key in d.keys():
+        # Looks magic, but the .get-method of a dict checks if the given entry is in the dict and if it is not, use a default.
+        # In this case, if there is an entry for d[key], use it but otherwise default to current value of d[key]
+        if isinstance(d[key], dict):
+            d[key] = recurse_replace_in_dict(d[key], mapping)
+        else:
+            d[key] = mapping.get(d[key], d[key])
+    return d
+
 class REPL(cmd.Cmd):
 
     def __init__(self, grammar_filename, debug=False):
@@ -41,6 +70,7 @@ class REPL(cmd.Cmd):
         self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommand, self.srvTextCommand)
         
         # TODO #5: add a dictionary to record that "ice_tea" must map back to "ice tea"
+        self._underscore_mapping = {}
 
     def srvTextCommand(self, request):
         response = TextCommandResponse()
@@ -126,10 +156,12 @@ class REPL(cmd.Cmd):
             if sem == False:
                 print("\n    I do not understand.\n")
                 return False
-            # TODO #5: Here, map the "ice_tea" back to the original "ice tea"
 
             import yaml
             params = yaml.load(sem)
+
+            # TODO #5: Here, map the "ice_tea" back to the original "ice tea"
+            params = recurse_replace_in_dict(params, self._underscore_mapping)
 
             if debug:
                 print params
@@ -195,7 +227,11 @@ class REPL(cmd.Cmd):
         opts = []
         for t in types:
             if t != "":
-                # TODO #5: Here, map the "ice tea" back to the grammar-parseable "ice_tea"
+                if " " in t:
+                    # TODO #5: Here, map the "ice tea" back to the grammar-parseable "ice_tea"
+                    t_with_underscore = t.replace(" ", "_")
+                    self._underscore_mapping[t_with_underscore] = t
+                    t = t_with_underscore
                 opts += [cfgparser.Option(t, [cfgparser.Conjunct(t)])]
 
         return opts
