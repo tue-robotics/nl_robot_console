@@ -162,6 +162,7 @@ class REPL(cmd.Cmd):
 
             # TODO #5: Here, map the "ice_tea" back to the original "ice tea"
             params = recurse_replace_in_dict(params, self._underscore_mapping)
+            sem = str(params)  # To have the edits done on params also performed on the sem-antics.
 
             if debug:
                 print params
