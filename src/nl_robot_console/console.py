@@ -2,10 +2,12 @@
 import cmd
 import sys
 
-from action_server.srv import AddAction
+import actionlib
+import action_server.msg
 from ed.srv import SimpleQuery
 from nl_robot_console.srv import TextCommandRequest, TextCommandResponse, TextCommand
 import rospy
+import yaml
 
 from grammar_parser import cfgparser
 
@@ -16,8 +18,31 @@ class RobotConnection:
 
     def __init__(self, robot_name):
         self.robot_name = robot_name
-        self.cl_robot = rospy.ServiceProxy("/state_machine/add_action", AddAction)
+        self.action_client = actionlib.SimpleActionClient(self.robot_name + "/task", action_server.msg.TaskAction)
+        rospy.logdebug("Waiting for task action server...")
+        self.action_client.wait_for_server()
+        rospy.logdebug("Connected to task action server")
+
         self.cl_wm = rospy.ServiceProxy(self.robot_name + "/ed/simple_query", SimpleQuery)
+
+    def send_task(self, semantics):
+        recipe = '[' + semantics + ']'
+        goal = action_server.msg.TaskGoal(recipe=recipe)
+        self.action_client.send_goal(goal)
+        self.action_client.wait_for_result()
+        result = self.action_client.get_result()
+
+        msg = ""
+        if result.result == action_server.msg.TaskResult.RESULT_MISSING_INFORMATION:
+            return False, "Not enough information to perform this task."
+        elif result.result == action_server.msg.TaskResult.RESULT_TASK_EXECUTION_FAILED:
+            return False, "Task execution failed."
+        elif result.result == action_server.msg.TaskResult.RESULT_UNKNOWN:
+            return False, "Unknown result from the action server."
+        elif result.result == action_server.msg.TaskResult.RESULT_SUCCEEDED:
+            return True, "Task succeeded!"
+
+        return msg
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -157,7 +182,6 @@ class REPL(cmd.Cmd):
                 print("\n    I do not understand.\n")
                 return False
 
-            import yaml
             params = yaml.load(sem)
 
             # TODO #5: Here, map the "ice_tea" back to the original "ice tea"
@@ -175,20 +199,14 @@ class REPL(cmd.Cmd):
                 print("\n    Please specify which robot to use.\n")
                 return False
 
-            if "action" in params:
-                action = params["action"]
-            else:
+            if not "action" in params:
                 print("\n    No action specified in semantics:\n        %s\n" % sem)
                 return False
 
-            try:
-                resp = self.robot_connection.cl_robot(action=action, parameters=sem)
-                if (resp.error_msg):
-                    print "\n    Error message from action server:\n\n        %s\n" % resp.error_msg
-            except rospy.ServiceException, e:
-                print("\n    Service call failed: %s\n" % e)
-
-            # print "\n    Meaning: %s\n" % sem
+            print sem
+            result = self.robot_connection.send_task(semantics=sem)
+            if not result[0]:
+                print "\n    Result from action server:\n\n        {0}\n".format(result[1])
 
         return False
 
@@ -282,13 +300,13 @@ def main():
 
 
     try:
+        rospy.init_node("nl_robot_console")
         repl = REPL(os.path.join(pkgdir, "grammar.fcfg"), debug=debug)
 
         if cmd:
             repl.default(cmd, debug=debug)
             exit(0)
         elif service:
-            rospy.init_node("nl_robot_console")
             rospy.spin()
         else:
             repl.cmdloop()
