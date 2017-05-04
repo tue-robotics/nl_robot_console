@@ -178,12 +178,10 @@ class REPL(cmd.Cmd):
         elif command in ["reload"]:
             self._load_grammar()
         else:
-            sem = self.parser.parse("C", command.strip().split(" "), debug=debug)
-            if sem == False:
+            params = self.parser.parse("C", command.strip().split(" "), debug=debug)
+            if not params:
                 print("\n    I do not understand.\n")
                 return False
-
-            params = yaml.load(sem)
 
             # TODO #5: Here, map the "ice_tea" back to the original "ice tea"
             params = recurse_replace_in_dict(params, self._underscore_mapping)
