@@ -306,13 +306,13 @@ def main():
 
         if cmd:
             repl.default(cmd, debug=debug)
-            exit(0)
+            return 0
         elif service:
             rospy.spin()
         else:
             repl.cmdloop()
     except KeyboardInterrupt:
-        pass
+        return 0
 
 if __name__ == "__main__":
     sys.exit(main())
