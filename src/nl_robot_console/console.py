@@ -2,48 +2,21 @@
 import cmd
 import sys
 
-import actionlib
-import action_server.msg
+from action_server import Client
 from ed.srv import SimpleQuery
 from nl_robot_console.srv import TextCommandRequest, TextCommandResponse, TextCommand
 import rospy
-import yaml
 
 from grammar_parser import cfgparser
 
 
 # ----------------------------------------------------------------------------------------------------
 
-class RobotConnection:
-
+class RobotConnection(Client):
     def __init__(self, robot_name):
-        self.robot_name = robot_name
-        action_name = "/" + self.robot_name + "/action_server/task"
-        self.action_client = actionlib.SimpleActionClient(action_name, action_server.msg.TaskAction)
-        rospy.logdebug("Waiting for task action server at {}...".format(action_name))
-        self.action_client.wait_for_server()
-        rospy.logdebug("Connected to task action server")
+        Client.__init__(self, robot_name)
 
-        self.cl_wm = rospy.ServiceProxy(self.robot_name + "/ed/simple_query", SimpleQuery)
-
-    def send_task(self, semantics):
-        recipe = '[' + semantics + ']'
-        goal = action_server.msg.TaskGoal(recipe=recipe)
-        self.action_client.send_goal(goal)
-        self.action_client.wait_for_result()
-        result = self.action_client.get_result()
-
-        msg = ""
-        if result.result == action_server.msg.TaskResult.RESULT_MISSING_INFORMATION:
-            return False, "Not enough information to perform this task."
-        elif result.result == action_server.msg.TaskResult.RESULT_TASK_EXECUTION_FAILED:
-            return False, "Task execution failed."
-        elif result.result == action_server.msg.TaskResult.RESULT_UNKNOWN:
-            return False, "Unknown result from the action server."
-        elif result.result == action_server.msg.TaskResult.RESULT_SUCCEEDED:
-            return True, "Task succeeded!"
-
-        return msg
+        self.cl_wm = rospy.ServiceProxy(robot_name + "/ed/simple_query", SimpleQuery)
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -202,8 +175,7 @@ class REPL(cmd.Cmd):
                 print("\n    No action specified in semantics:\n        %s\n" % sem)
                 return False
 
-            print sem
-            result = self.robot_connection.send_task(semantics=sem)
+            result = self.robot_connection.send_task(semantics="[" + sem + "]")
             if not result[0]:
                 print "\n    Result from action server:\n\n        {0}\n".format(result[1])
 
