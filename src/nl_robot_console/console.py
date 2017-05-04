@@ -18,8 +18,9 @@ class RobotConnection:
 
     def __init__(self, robot_name):
         self.robot_name = robot_name
-        self.action_client = actionlib.SimpleActionClient(self.robot_name + "/task", action_server.msg.TaskAction)
-        rospy.logdebug("Waiting for task action server...")
+        action_name = "/" + self.robot_name + "/action_server/task"
+        self.action_client = actionlib.SimpleActionClient(action_name, action_server.msg.TaskAction)
+        rospy.logdebug("Waiting for task action server at {}...".format(action_name))
         self.action_client.wait_for_server()
         rospy.logdebug("Connected to task action server")
 
