@@ -175,9 +175,9 @@ class REPL(cmd.Cmd):
                 print("\n    No action specified in semantics:\n        %s\n" % sem)
                 return False
 
-            result = self.robot_connection.send_task(semantics="[" + sem + "]")
-            if not result[0]:
-                print "\n    Result from action server:\n\n        {0}\n".format(result[1])
+            result = self.robot_connection.send_task(semantics="{'actions': [" + sem + "]}")
+            if not result.succeeded:
+                print "\n    Result from action server:\n\n        {0}\n".format(result.messages)
 
         return False
 
