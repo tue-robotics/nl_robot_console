@@ -9,6 +9,8 @@ import rospy
 
 from grammar_parser import cfgparser
 
+from robocup_knowledge import load_knowledge
+
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -16,7 +18,7 @@ class RobotConnection(Client):
     def __init__(self, robot_name):
         Client.__init__(self, robot_name)
 
-        self.cl_wm = rospy.ServiceProxy(robot_name + "/ed/simple_query", SimpleQuery)
+        self.world_model_query = rospy.ServiceProxy(robot_name + "/ed/simple_query", SimpleQuery)
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -51,11 +53,11 @@ def recurse_replace_in_dict(d, mapping):
 
 class REPL(cmd.Cmd):
 
-    def __init__(self, grammar_filename, debug=False):
+    def __init__(self, knowledge_name, debug=False):
         cmd.Cmd.__init__(self)
         self.prompt = "> "
         self.use_rawinput = True
-        self.grammar_filename = grammar_filename
+        self.knowledge = load_knowledge(knowledge_name)
         self._load_grammar()
         self.debug = debug
 
@@ -65,8 +67,6 @@ class REPL(cmd.Cmd):
         self._get_or_create_robot_connection("amigo")
 
         self._clear_caches()
-
-        self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommand, self.srvTextCommand)
         
         # TODO #5: add a dictionary to record that "ice_tea" must map back to "ice tea"
         self._underscore_mapping = {}
@@ -82,7 +82,7 @@ class REPL(cmd.Cmd):
         return response
 
     def _load_grammar(self):
-        self.parser = cfgparser.CFGParser.fromfile(self.grammar_filename)
+        self.parser = cfgparser.CFGParser.fromstring(self.knowledge.grammar)
         self.parser.set_function("id", self.enum_id)
         self.parser.set_function("type", self.enum_type)
         self.parser.set_function("number", self.enum_number)
@@ -148,17 +148,17 @@ class REPL(cmd.Cmd):
             return False
         elif command in ["quit", "exit"]:
             return True  # True means interpreter has to stop
-        elif command in ["reload"]:
+        elif command == "reload":
             self._load_grammar()
         else:
-            params = self.parser.parse("C", command.strip().split(" "), debug=debug)
+            params = self.parser.parse(self.knowledge.grammar_target, command.strip().split(" "), debug=debug)
             if not params:
                 print("\n    I do not understand.\n")
                 return False
 
             # TODO #5: Here, map the "ice_tea" back to the original "ice tea"
-            params = recurse_replace_in_dict(params, self._underscore_mapping)
-            sem = str(params)  # To have the edits done on params also performed on the sem-antics.
+            # params = recurse_replace_in_dict(params, self._underscore_mapping)
+            semantics = str(params)  # To have the edits done on params also performed on the semantics.
 
             if debug:
                 print params
@@ -171,13 +171,9 @@ class REPL(cmd.Cmd):
                 print("\n    Please specify which robot to use.\n")
                 return False
 
-            if not "action" in params:
-                print("\n    No action specified in semantics:\n        %s\n" % sem)
-                return False
-
-            result = self.robot_connection.send_task(semantics="{'actions': [" + sem + "]}")
+            result = self.robot_connection.send_task(semantics=semantics)
             if not result.succeeded:
-                print "\n    Result from action server:\n\n        {0}\n".format(result.messages)
+                print "\n    Result from action server:\n\n        {0}\n".format(result)
 
         return False
 
@@ -189,7 +185,7 @@ class REPL(cmd.Cmd):
     def completedefault(self, text, line, begidx, endidx):
         try:
             partial_command = line.split(" ")[:-1]
-            words = self.parser.next_word("C", partial_command)
+            words = self.parser.next_word(self.knowledge.grammar_target, partial_command)
         except Exception as e:
             print e
 
@@ -250,8 +246,7 @@ class REPL(cmd.Cmd):
 
 def main():
 
-    import sys, os
-    pkgdir = os.path.dirname(sys.argv[0])
+    import sys
 
     cmd = None
     debug = False
@@ -272,7 +267,7 @@ def main():
 
     try:
         rospy.init_node("nl_robot_console")
-        repl = REPL(os.path.join(pkgdir, "grammar.fcfg"), debug=debug)
+        repl = REPL("challenge_gpsr", debug=debug)
 
         if cmd:
             repl.default(cmd, debug=debug)
@@ -282,7 +277,7 @@ def main():
         else:
             repl.cmdloop()
     except KeyboardInterrupt:
-        return 0
+        pass
 
 if __name__ == "__main__":
     sys.exit(main())
