@@ -2,22 +2,23 @@
 import cmd
 import sys
 
-from action_server.srv import AddAction
+from action_server import Client
 from ed.srv import SimpleQuery
 from nl_robot_console.srv import TextCommandRequest, TextCommandResponse, TextCommand
 import rospy
 
 from grammar_parser import cfgparser
 
+from robocup_knowledge import load_knowledge
+
 
 # ----------------------------------------------------------------------------------------------------
 
-class RobotConnection:
-
+class RobotConnection(Client):
     def __init__(self, robot_name):
-        self.robot_name = robot_name
-        self.cl_robot = rospy.ServiceProxy("/state_machine/add_action", AddAction)
-        self.cl_wm = rospy.ServiceProxy(self.robot_name + "/ed/simple_query", SimpleQuery)
+        Client.__init__(self, robot_name)
+
+        self.world_model_query = rospy.ServiceProxy(robot_name + "/ed/simple_query", SimpleQuery)
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -52,11 +53,11 @@ def recurse_replace_in_dict(d, mapping):
 
 class REPL(cmd.Cmd):
 
-    def __init__(self, grammar_filename, debug=False):
+    def __init__(self, knowledge_name, debug=False):
         cmd.Cmd.__init__(self)
         self.prompt = "> "
         self.use_rawinput = True
-        self.grammar_filename = grammar_filename
+        self.knowledge = load_knowledge(knowledge_name)
         self._load_grammar()
         self.debug = debug
 
@@ -66,8 +67,6 @@ class REPL(cmd.Cmd):
         self._get_or_create_robot_connection("amigo")
 
         self._clear_caches()
-
-        self.srv = rospy.Service("/amigo/nl_robot_console/command", TextCommand, self.srvTextCommand)
         
         # TODO #5: add a dictionary to record that "ice_tea" must map back to "ice tea"
         self._underscore_mapping = {}
@@ -83,7 +82,7 @@ class REPL(cmd.Cmd):
         return response
 
     def _load_grammar(self):
-        self.parser = cfgparser.CFGParser.fromfile(self.grammar_filename)
+        self.parser = cfgparser.CFGParser.fromstring(self.knowledge.grammar)
         self.parser.set_function("id", self.enum_id)
         self.parser.set_function("type", self.enum_type)
         self.parser.set_function("number", self.enum_number)
@@ -149,20 +148,17 @@ class REPL(cmd.Cmd):
             return False
         elif command in ["quit", "exit"]:
             return True  # True means interpreter has to stop
-        elif command in ["reload"]:
+        elif command == "reload":
             self._load_grammar()
         else:
-            sem = self.parser.parse("C", command.strip().split(" "), debug=debug)
-            if sem == False:
+            params = self.parser.parse(self.knowledge.grammar_target, command.strip().split(" "), debug=debug)
+            if not params:
                 print("\n    I do not understand.\n")
                 return False
 
-            import yaml
-            params = yaml.load(sem)
-
             # TODO #5: Here, map the "ice_tea" back to the original "ice tea"
-            params = recurse_replace_in_dict(params, self._underscore_mapping)
-            sem = str(params)  # To have the edits done on params also performed on the sem-antics.
+            # params = recurse_replace_in_dict(params, self._underscore_mapping)
+            semantics = str(params)  # To have the edits done on params also performed on the semantics.
 
             if debug:
                 print params
@@ -175,20 +171,9 @@ class REPL(cmd.Cmd):
                 print("\n    Please specify which robot to use.\n")
                 return False
 
-            if "action" in params:
-                action = params["action"]
-            else:
-                print("\n    No action specified in semantics:\n        %s\n" % sem)
-                return False
-
-            try:
-                resp = self.robot_connection.cl_robot(action=action, parameters=sem)
-                if (resp.error_msg):
-                    print "\n    Error message from action server:\n\n        %s\n" % resp.error_msg
-            except rospy.ServiceException, e:
-                print("\n    Service call failed: %s\n" % e)
-
-            # print "\n    Meaning: %s\n" % sem
+            result = self.robot_connection.send_task(semantics=semantics)
+            if not result.succeeded:
+                print "\n    Result from action server:\n\n        {0}\n".format(result)
 
         return False
 
@@ -200,7 +185,7 @@ class REPL(cmd.Cmd):
     def completedefault(self, text, line, begidx, endidx):
         try:
             partial_command = line.split(" ")[:-1]
-            words = self.parser.next_word("C", partial_command)
+            words = self.parser.next_word(self.knowledge.grammar_target, partial_command)
         except Exception as e:
             print e
 
@@ -261,8 +246,7 @@ class REPL(cmd.Cmd):
 
 def main():
 
-    import sys, os
-    pkgdir = os.path.dirname(sys.argv[0])
+    import sys
 
     cmd = None
     debug = False
@@ -282,13 +266,13 @@ def main():
 
 
     try:
-        repl = REPL(os.path.join(pkgdir, "grammar.fcfg"), debug=debug)
+        rospy.init_node("nl_robot_console")
+        repl = REPL("challenge_gpsr", debug=debug)
 
         if cmd:
             repl.default(cmd, debug=debug)
-            exit(0)
+            return 0
         elif service:
-            rospy.init_node("nl_robot_console")
             rospy.spin()
         else:
             repl.cmdloop()
