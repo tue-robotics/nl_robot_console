@@ -141,6 +141,10 @@ class REPL(cmd.Cmd):
             exit   - quits
         """
 
+    def do_EOF(self, line):
+        'exit the program. Use  Ctrl-D (Ctrl-Z in Windows) as a shortcut'
+        return True
+
     def default(self, command, debug=False):
         debug = debug or self.debug
 
