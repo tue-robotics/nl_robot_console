@@ -55,11 +55,11 @@ class REPL(cmd.Cmd):
 
     def __init__(self, knowledge_name, debug=False):
         cmd.Cmd.__init__(self)
+        self.debug = debug
         self.prompt = "> "
         self.use_rawinput = True
         self.knowledge = load_knowledge(knowledge_name)
         self._load_grammar()
-        self.debug = debug
 
         # Default robot connection
         self.robot_connection = None
