@@ -176,7 +176,7 @@ class REPL(cmd.Cmd):
                 return False
 
             result = self.robot_connection.send_task(semantics=semantics)
-            if not result.succeeded:
+            if not result.succeeded or debug:
                 print "\n    Result from action server:\n\n        {0}\n".format(result)
 
         return False
