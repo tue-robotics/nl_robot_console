@@ -67,7 +67,7 @@ class REPL(cmd.Cmd):
         self._get_or_create_robot_connection("amigo")
 
         self._clear_caches()
-        
+
         # TODO #5: add a dictionary to record that "ice_tea" must map back to "ice tea"
         self._underscore_mapping = {}
 
@@ -255,6 +255,7 @@ def main():
     cmd = None
     debug = False
     service = False
+    grammar = 'challenge_demo'
     if len(sys.argv) >= 2:
         debug = "--debug" in sys.argv
         if debug:
@@ -266,12 +267,17 @@ def main():
             sys.argv.remove("--service")
 
     if len(sys.argv) >= 2:
+        grammar = "--grammar" in sys.argv
+        if grammar:
+            sys.argv.remove("--service")
+
+    if len(sys.argv) >= 2:
         cmd = sys.argv[1]
 
 
     try:
         rospy.init_node("nl_robot_console")
-        repl = REPL("challenge_gpsr", debug=debug)
+        repl = REPL(grammar, debug=debug)
 
         if cmd:
             repl.default(cmd, debug=debug)
