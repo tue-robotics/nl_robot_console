@@ -13,8 +13,8 @@
   <build_depend>action_server</build_depend>
   <run_depend>action_server</run_depend>
 
-  <build_depend>ed</build_depend>
-  <run_depend>ed</run_depend>
+  <build_depend>ed_msgs</build_depend>
+  <run_depend>ed_msgs</run_depend>
 
   <build_depend>grammar_parser</build_depend>
   <run_depend>grammar_parser</run_depend>
