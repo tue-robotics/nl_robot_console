@@ -3,7 +3,7 @@ import cmd
 import sys
 
 from action_server import Client
-from ed.srv import SimpleQuery
+from ed_msgs.srv import SimpleQuery
 from nl_robot_console.srv import TextCommandRequest, TextCommandResponse, TextCommand
 import rospy
 
