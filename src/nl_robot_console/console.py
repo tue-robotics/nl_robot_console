@@ -11,6 +11,8 @@ from grammar_parser import cfgparser
 
 from robocup_knowledge import load_knowledge
 
+import argparse
+
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -21,6 +23,7 @@ class RobotConnection(Client):
         self.world_model_query = rospy.ServiceProxy(robot_name + "/ed/simple_query", SimpleQuery)
 
 # ----------------------------------------------------------------------------------------------------
+
 
 def recurse_replace_in_dict(d, mapping):
     """
@@ -51,8 +54,8 @@ def recurse_replace_in_dict(d, mapping):
             d[key] = mapping.get(d[key], d[key])
     return d
 
-class REPL(cmd.Cmd):
 
+class REPL(cmd.Cmd):
     def __init__(self, knowledge_name, debug=False):
         cmd.Cmd.__init__(self)
         self.debug = debug
@@ -95,7 +98,7 @@ class REPL(cmd.Cmd):
     def _get_or_create_robot_connection(self, robot_name):
         self.prompt = "[%s] > " % robot_name
 
-        if not robot_name in self.robot_to_connection:
+        if robot_name not in self.robot_to_connection:
             self.robot_connection = RobotConnection(robot_name)
             self.robot_to_connection[robot_name] = self.robot_connection
         else:
@@ -248,41 +251,25 @@ class REPL(cmd.Cmd):
 
 # ----------------------------------------------------------------------------------------------------
 
+
 def main():
-
-    import sys
-
-    cmd = None
-    debug = False
-    service = False
-    grammar = 'challenge_demo'
-    if len(sys.argv) >= 2:
-        debug = "--debug" in sys.argv
-        if debug:
-            sys.argv.remove("--debug")
-
-    if len(sys.argv) >= 2:
-        service = "--service" in sys.argv
-        if service:
-            sys.argv.remove("--service")
-
-    if len(sys.argv) >= 2:
-        grammar = "--grammar" in sys.argv
-        if grammar:
-            sys.argv.remove("--service")
-
-    if len(sys.argv) >= 2:
-        cmd = sys.argv[1]
-
+    parser = argparse.ArgumentParser(description="natural language console")
+    parser.add_argument('--grammar', help="name of knowledge file (default: challenge_demo)", default='challenge_demo',
+                        type=str)
+    parser.add_argument('--debug', default=False, action='store_true')
+    parser.add_argument('--service', default=False, action='store_true')
+    parser.add_argument('cmds', nargs=argparse.REMAINDER, type=str)
+    args = parser.parse_args()
 
     try:
         rospy.init_node("nl_robot_console")
-        repl = REPL(grammar, debug=debug)
+        repl = REPL(args.grammar, debug=args.debug)
 
-        if cmd:
-            repl.default(cmd, debug=debug)
+        if args.cmds:
+            cmd = ' '.join(args.cmds)
+            repl.default(cmd, debug=args.debug)
             return 0
-        elif service:
+        elif args.service:
             rospy.spin()
         else:
             repl.cmdloop()
