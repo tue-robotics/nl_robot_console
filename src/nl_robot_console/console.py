@@ -12,7 +12,7 @@ from grammar_parser import cfgparser
 from robocup_knowledge import load_knowledge
 
 import argparse
-
+import atexit
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -251,7 +251,6 @@ class REPL(cmd.Cmd):
 
 # ----------------------------------------------------------------------------------------------------
 
-
 def main():
     parser = argparse.ArgumentParser(description="natural language console")
     parser.add_argument('--grammar', help="name of knowledge file (default: challenge_demo)", default='challenge_demo',
@@ -264,6 +263,9 @@ def main():
     try:
         rospy.init_node("nl_robot_console")
         repl = REPL(args.grammar, debug=args.debug)
+
+        # when user hits ctrl+d in console, cancel all acctions
+        atexit.register(repl.robot_connection.cancel_all)
 
         if args.cmds:
             cmd = ' '.join(args.cmds)
