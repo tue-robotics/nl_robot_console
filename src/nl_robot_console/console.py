@@ -12,7 +12,6 @@ from grammar_parser import cfgparser
 from robocup_knowledge import load_knowledge
 
 import argparse
-import atexit
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -261,11 +260,12 @@ def main():
     args = parser.parse_args()
 
     try:
-        rospy.init_node("nl_robot_console")
-        repl = REPL(args.grammar, debug=args.debug)
+        # if disable_signals=False, ctrl+c results in killing rospy and can only be checked by rospy.is_shutdown()
+        # if disable_signals=True,  ctrl+c will not kill rospy and KeyboardInterrupt exceptions need to be used
+        # http://wiki.ros.org/rospy/Overview/Initialization%20and%20Shutdown
+        rospy.init_node("nl_robot_console", disable_signals=True)
 
-        # when user hits ctrl+d in console, cancel all acctions
-        atexit.register(repl.robot_connection.cancel_all)
+        repl = REPL(args.grammar, debug=args.debug)
 
         if args.cmds:
             cmd = ' '.join(args.cmds)
