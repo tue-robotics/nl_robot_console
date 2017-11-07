@@ -13,7 +13,6 @@ from robocup_knowledge import load_knowledge
 
 import argparse
 
-
 # ----------------------------------------------------------------------------------------------------
 
 class RobotConnection(Client):
@@ -73,6 +72,17 @@ class REPL(cmd.Cmd):
 
         # TODO #5: add a dictionary to record that "ice_tea" must map back to "ice tea"
         self._underscore_mapping = {}
+
+    def cmdloop(self, intro=None):
+        if self.intro is not None:
+            print(self.intro)
+        while True:
+            try:
+                cmd.Cmd.cmdloop(self, intro=None)
+                self.postloop()
+                break
+            except KeyboardInterrupt:
+                print "^C"
 
     def srvTextCommand(self, request):
         response = TextCommandResponse()
@@ -146,6 +156,7 @@ class REPL(cmd.Cmd):
 
     def do_EOF(self, line):
         'exit the program. Use  Ctrl-D (Ctrl-Z in Windows) as a shortcut'
+        print "quit"
         return True
 
     def default(self, command, debug=False):
@@ -178,9 +189,13 @@ class REPL(cmd.Cmd):
                 print("\n    Please specify which robot to use.\n")
                 return False
 
-            result = self.robot_connection.send_task(semantics=semantics)
-            if not result.succeeded or debug:
-                print "\n    Result from action server:\n\n        {0}\n".format(result)
+            try:
+                result = self.robot_connection.send_task(semantics=semantics)
+
+                if not result.succeeded or debug:
+                    print "\n    Result from action server:\n\n        {0}\n".format(result)
+            except KeyboardInterrupt:
+                pass
 
         return False
 
@@ -251,7 +266,6 @@ class REPL(cmd.Cmd):
 
 # ----------------------------------------------------------------------------------------------------
 
-
 def main():
     parser = argparse.ArgumentParser(description="natural language console")
     parser.add_argument('--grammar', help="name of knowledge file (default: challenge_demo)", default='challenge_demo',
@@ -262,7 +276,11 @@ def main():
     args = parser.parse_args()
 
     try:
-        rospy.init_node("nl_robot_console")
+        # if disable_signals=False, ctrl+c results in killing rospy and can only be checked by rospy.is_shutdown()
+        # if disable_signals=True,  ctrl+c will not kill rospy and KeyboardInterrupt exceptions need to be used
+        # http://wiki.ros.org/rospy/Overview/Initialization%20and%20Shutdown
+        rospy.init_node("nl_robot_console", disable_signals=True)
+
         repl = REPL(args.grammar, debug=args.debug)
 
         if args.cmds:
