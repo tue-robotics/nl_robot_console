@@ -73,6 +73,17 @@ class REPL(cmd.Cmd):
         # TODO #5: add a dictionary to record that "ice_tea" must map back to "ice tea"
         self._underscore_mapping = {}
 
+    def cmdloop(self, intro=None):
+        if self.intro is not None:
+            print(self.intro)
+        while True:
+            try:
+                cmd.Cmd.cmdloop(self, intro=None)
+                self.postloop()
+                break
+            except KeyboardInterrupt:
+                print "^C"
+
     def srvTextCommand(self, request):
         response = TextCommandResponse()
         try:
@@ -145,6 +156,7 @@ class REPL(cmd.Cmd):
 
     def do_EOF(self, line):
         'exit the program. Use  Ctrl-D (Ctrl-Z in Windows) as a shortcut'
+        print "quit"
         return True
 
     def default(self, command, debug=False):
