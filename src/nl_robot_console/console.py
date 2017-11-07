@@ -177,9 +177,13 @@ class REPL(cmd.Cmd):
                 print("\n    Please specify which robot to use.\n")
                 return False
 
-            result = self.robot_connection.send_task(semantics=semantics)
-            if not result.succeeded or debug:
-                print "\n    Result from action server:\n\n        {0}\n".format(result)
+            try:
+                result = self.robot_connection.send_task(semantics=semantics)
+
+                if not result.succeeded or debug:
+                    print "\n    Result from action server:\n\n        {0}\n".format(result)
+            except KeyboardInterrupt:
+                pass
 
         return False
 
