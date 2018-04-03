@@ -55,7 +55,7 @@ def recurse_replace_in_dict(d, mapping):
 
 
 class REPL(cmd.Cmd):
-    def __init__(self, knowledge_name, debug=False):
+    def __init__(self, knowledge_name, robot_name, debug=False):
         cmd.Cmd.__init__(self)
         self.debug = debug
         self.prompt = "> "
@@ -66,7 +66,7 @@ class REPL(cmd.Cmd):
         # Default robot connection
         self.robot_connection = None
         self.robot_to_connection = {}
-        self._get_or_create_robot_connection("amigo")
+        self._get_or_create_robot_connection(robot_name)
 
         self._clear_caches()
 
@@ -272,6 +272,7 @@ def main():
                         type=str)
     parser.add_argument('--debug', default=False, action='store_true')
     parser.add_argument('--service', default=False, action='store_true')
+    parser.add_argument('--robot', default='amigo')
     parser.add_argument('cmds', nargs=argparse.REMAINDER, type=str)
     args = parser.parse_args()
 
@@ -281,7 +282,7 @@ def main():
         # http://wiki.ros.org/rospy/Overview/Initialization%20and%20Shutdown
         rospy.init_node("nl_robot_console", disable_signals=True)
 
-        repl = REPL(args.grammar, debug=args.debug)
+        repl = REPL(args.grammar, robot_name=args.robot, debug=args.debug)
 
         if args.cmds:
             cmd = ' '.join(args.cmds)
