@@ -13,6 +13,7 @@ from robocup_knowledge import load_knowledge
 
 import argparse
 
+
 # ----------------------------------------------------------------------------------------------------
 
 class RobotConnection(Client):
@@ -82,7 +83,7 @@ class REPL(cmd.Cmd):
                 self.postloop()
                 break
             except KeyboardInterrupt:
-                print "^C"
+                print("^C")
 
     def srvTextCommand(self, request):
         response = TextCommandResponse()
@@ -122,7 +123,7 @@ class REPL(cmd.Cmd):
 
         try:
             self._entities = self.robot_connection.cl_wm().entities
-        except rospy.service.ServiceException, e:
+        except rospy.service.ServiceException as e:
             print("\n\n    %s\n" % e)
 
         self._updated_wm = True
@@ -131,7 +132,7 @@ class REPL(cmd.Cmd):
         pass
 
     def do_help(self, str):
-        print """
+        print("""
         Write a command in natural language. You can either prefix the
         command with a robot name, or leave it out and the command will
         be sent to the last robot specified.
@@ -152,11 +153,11 @@ class REPL(cmd.Cmd):
             reload - reloads the grammar
             help   - shows this
             exit   - quits
-        """
+        """)
 
     def do_EOF(self, line):
         'exit the program. Use  Ctrl-D (Ctrl-Z in Windows) as a shortcut'
-        print "quit"
+        print("quit")
         return True
 
     def default(self, command, debug=False):
@@ -179,7 +180,7 @@ class REPL(cmd.Cmd):
             semantics = str(params)  # To have the edits done on params also performed on the semantics.
 
             if debug:
-                print params
+                print(params)
 
             if "robot" in params:
                 robot_name = params["robot"]
@@ -193,7 +194,7 @@ class REPL(cmd.Cmd):
                 result = self.robot_connection.send_task(semantics=semantics)
 
                 if not result.succeeded or debug:
-                    print "\n    Result from action server:\n\n        {0}\n".format(result)
+                    print("\n    Result from action server:\n\n        {0}\n".format(result))
             except KeyboardInterrupt:
                 pass
 
@@ -209,7 +210,7 @@ class REPL(cmd.Cmd):
             partial_command = line.split(" ")[:-1]
             words = self.parser.next_word(self.knowledge.grammar_target, partial_command)
         except Exception as e:
-            print e
+            print(e)
 
         return [w + " " for w in words if w.startswith(text)]
 
@@ -264,6 +265,7 @@ class REPL(cmd.Cmd):
         except ValueError:
             return []
 
+
 # ----------------------------------------------------------------------------------------------------
 
 def main():
@@ -294,6 +296,7 @@ def main():
             repl.cmdloop()
     except KeyboardInterrupt:
         pass
+
 
 if __name__ == "__main__":
     sys.exit(main())
