@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
       message_generation
       std_msgs
       grammar_parser
+      robocup_knowledge
 )
 
 catkin_python_setup()
