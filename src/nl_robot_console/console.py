@@ -274,7 +274,7 @@ def main():
                         type=str)
     parser.add_argument('--debug', default=False, action='store_true')
     parser.add_argument('--service', default=False, action='store_true')
-    parser.add_argument('--robot', default='amigo')
+    parser.add_argument('--robot', default='hero')
     parser.add_argument('cmds', nargs=argparse.REMAINDER, type=str)
     args = parser.parse_args()
 
